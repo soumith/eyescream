@@ -1,4 +1,4 @@
-local SpatialConvolutionUpsample, parent = torch.class('nn.SpatialConvolutionUpsample','nn.SpatialConvolutionMM')
+local SpatialConvolutionUpsample, parent = torch.class('nn.SpatialConvolutionUpsample','nn.SpatialConvolution')
 
 function SpatialConvolutionUpsample:__init(nInputPlane, nOutputPlane, kW, kH, factor)
    factor = factor or 2
