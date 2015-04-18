@@ -20,7 +20,8 @@ opt = lapp[[
   -n,--network       (default "")          reload pretrained network
   -f,--full          (default true)        use the full dataset
   -p,--plot                                plot while training
-  -r,--learningRate  (default 0.01)        learning rate, for SGD only
+  -r,--learningRateD  (default 0.001)        learning rate for Discriminative
+  -q,--learningRateG  (default 0.01)        learning rate for Generative
   -b,--batchSize     (default 128)          batch size
   -m,--momentum      (default 0)           momentum, for SGD only
   -i,--maxIter       (default 3)           maximum nb of iterations per batch, for LBFGS
@@ -78,13 +79,14 @@ if opt.network == '' then
   model_D:add(nn.Sigmoid())
 
   -- Init weights
+  --[[
   model_D.modules[2].weight:normal(0, 0.005)
   model_D.modules[4].weight:normal(0, 0.005)
   model_D.modules[7].weight:normal(0, 0.005)
   model_D.modules[2].bias:fill(0)
   model_D.modules[4].bias:fill(0)
   model_D.modules[7].bias:fill(0)
-
+  ]]--
 ----------------------------------------------------------------------
 -- define G network to train
   model_G = nn.Sequential()
@@ -97,6 +99,7 @@ if opt.network == '' then
   model_G:add(nn.Sigmoid())
   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
 
+  --[[
   -- Init weights
   model_G.modules[2].weight:normal(0, 0.05)
   model_G.modules[4].weight:normal(0, 0.05)
@@ -104,6 +107,7 @@ if opt.network == '' then
   model_G.modules[2].bias:fill(0)
   model_G.modules[4].bias:fill(0)
   model_G.modules[6].bias:fill(0)
+  ]]--
 else
   print('<trainer> reloading previously trained network: ' .. opt.network)
   tmp = torch.load(opt.network)
@@ -167,12 +171,12 @@ end
 
 -- Training parameters
 sgdState_D = {
-  learningRate = opt.learningRate,
+  learningRate = opt.learningRateD,
   momentum = opt.momentum
 }
 
 sgdState_G = {
-  learningRate = opt.learningRate,
+  learningRate = opt.learningRateG,
   momentum = opt.momentum
 }
 
