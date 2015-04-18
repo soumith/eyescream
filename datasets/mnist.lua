@@ -4,7 +4,7 @@ require 'paths'
 mnist = {}
 
 mnist.path_remote = 'https://s3.amazonaws.com/torch7/data/mnist.t7.tgz'
-mnist.path_dataset = '/home/denton/data/mnist/mnist.t7/'
+mnist.path_dataset = '/home/soumith/code/mnist/mnist.t7/'
 mnist.path_trainset = mnist.path_dataset ..  'train_32x32.t7'
 mnist.path_testset = mnist.path_dataset .. 'test_32x32.t7'
 
@@ -38,8 +38,8 @@ function mnist.loadDataset(fileName, start, stop)
    end
    local data = data[{{start,stop},{},{3,30},{3,30}}]
    local labels = labels[{{start, stop}}]
-   
-   print('<mnist> loaded ' .. stop - start + 1 .. ' examples') 
+
+   print('<mnist> loaded ' .. stop - start + 1 .. ' examples')
 
    local dataset = {}
    dataset.data = data
@@ -77,7 +77,7 @@ function mnist.loadDataset(fileName, start, stop)
   end
 
    function dataset:size()
-      return stop - start + 1 
+      return stop - start + 1
    end
 
    function dataset:numClasses()

@@ -9,7 +9,7 @@ require 'pl'
 require 'paths'
 disp = require 'display'
 adversarial = require 'train.adversarial'
-local debugger = require('fb.debugger')
+paths.dofile('../layers/SpatialConvolutionUpsample.lua')
 
 
 ----------------------------------------------------------------------
@@ -21,14 +21,14 @@ opt = lapp[[
   -f,--full          (default true)        use the full dataset
   -p,--plot                                plot while training
   -r,--learningRate  (default 0.01)        learning rate, for SGD only
-  -b,--batchSize     (default 100)          batch size
+  -b,--batchSize     (default 128)          batch size
   -m,--momentum      (default 0)           momentum, for SGD only
   -i,--maxIter       (default 3)           maximum nb of iterations per batch, for LBFGS
   --coefL1           (default 0)           L1 penalty on the weights
   --coefL2           (default 0)           L2 penalty on the weights
   -t,--threads       (default 4)           number of threads
-  -g,--gpu           (default -1)          on gpu 
-  -d,--noiseDim      (default 100)         dimensionality of noise vector
+  -g,--gpu           (default -1)          on gpu
+  -d,--noiseDim      (default 64)         dimensionality of noise vector
   --K                (default 1)           number of iterations to optimize D for
   -w, --window       (default 1)           windsow id of sample image
 ]]
@@ -56,8 +56,7 @@ classes = {'0','1'}
 opt.geometry = {1, 28, 28}
 
 function setWeights(weights, std)
-  weights:randn(weights:size())
-  weights:mul(std)
+  weights:normal(std)
 end
 
 local input_sz = opt.geometry[1] * opt.geometry[2] * opt.geometry[3]
@@ -66,42 +65,45 @@ if opt.network == '' then
 ----------------------------------------------------------------------
 -- define D network to train
   model_D = nn.Sequential()
-  model_D:add(nn.Reshape(input_sz))
-  model_D:add(nn.Linear(input_sz, 240))
+  model_D:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]):setNumInputDims(3))
+  model_D:add(nn.SpatialConvolution(opt.geometry[1], 16, 5, 5))
   model_D:add(nn.ReLU())
-  model_D:add(nn.Dropout())
-  model_D:add(nn.Linear(240, 240))
+  model_D:add(nn.SpatialConvolution(16, 32, 5, 5))
   model_D:add(nn.ReLU())
-  model_D:add(nn.Dropout())
-  model_D:add(nn.Linear(240,1))
+  model_D:add(nn.View(32*20*20):setNumInputDims(3))
+  model_D:add(nn.Linear(32*20*20,256))
+  model_D:add(nn.Dropout(0.5))
+  model_D:add(nn.ReLU())
+  model_D:add(nn.Linear(256,1))
   model_D:add(nn.Sigmoid())
 
   -- Init weights
-  setWeights(model_D.modules[2].weight, 0.005)
-  setWeights(model_D.modules[5].weight, 0.005)
-  setWeights(model_D.modules[8].weight, 0.005)
-  setWeights(model_D.modules[2].bias, 0)
-  setWeights(model_D.modules[5].bias, 0)
-  setWeights(model_D.modules[8].bias, 0)
+  model_D.modules[2].weight:normal(0, 0.005)
+  model_D.modules[4].weight:normal(0, 0.005)
+  model_D.modules[7].weight:normal(0, 0.005)
+  model_D.modules[2].bias:fill(0)
+  model_D.modules[4].bias:fill(0)
+  model_D.modules[7].bias:fill(0)
 
 ----------------------------------------------------------------------
 -- define G network to train
   model_G = nn.Sequential()
-  model_G:add(nn.Linear(opt.noiseDim, 1200))
+  model_G:add(nn.View(1, 8, 8):setNumInputDims(3))
+  model_G:add(nn.SpatialConvolutionUpsample(1,16,5,5,2))
   model_G:add(nn.ReLU())
-  model_G:add(nn.Linear(1200, 1200))
+  model_G:add(nn.SpatialConvolutionUpsample(16,32,5,5,2))
   model_G:add(nn.ReLU())
-  model_G:add(nn.Linear(1200, input_sz))
+  model_G:add(nn.SpatialConvolution(32,1,5,5))
   model_G:add(nn.Sigmoid())
-  model_G:add(nn.Reshape(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
+  model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
 
   -- Init weights
-  setWeights(model_G.modules[1].weight, 0.05)
-  setWeights(model_G.modules[3].weight, 0.05)
-  setWeights(model_G.modules[5].weight, 0.05)
-  setWeights(model_G.modules[1].bias, 0)
-  setWeights(model_G.modules[3].bias, 0)
-  setWeights(model_G.modules[5].bias, 0)
+  model_G.modules[2].weight:normal(0, 0.05)
+  model_G.modules[4].weight:normal(0, 0.05)
+  model_G.modules[6].weight:normal(0, 0.05)
+  model_G.modules[2].bias:fill(0)
+  model_G.modules[4].bias:fill(0)
+  model_G.modules[6].bias:fill(0)
 else
   print('<trainer> reloading previously trained network: ' .. opt.network)
   tmp = torch.load(opt.network)
@@ -191,15 +193,14 @@ while true do
 
     trainLogger:style{['% mean class accuracy (train set)'] = '-'}
     testLogger:style{['% mean class accuracy (test set)'] = '-'}
-    trainLogger:plot()
-    testLogger:plot()
+    -- trainLogger:plot()
+    -- testLogger:plot()
 
     local samples = model_G.modules[#model_G.modules].output
     to_plot = {}
     for i = 1,100 do
       to_plot[i] = samples[i]:float()
     end
-    --debugger.enter()
     disp.image(to_plot, {win=opt.window, width=500})
     if opt.gpu then
       torch.setdefaulttensortype('torch.CudaTensor')

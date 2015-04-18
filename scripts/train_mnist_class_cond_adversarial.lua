@@ -9,7 +9,6 @@ require 'pl'
 require 'paths'
 disp = require 'display'
 adversarial = require 'train.conditional_adversarial'
-debugger = require('fb.debugger')
 
 
 ----------------------------------------------------------------------
@@ -27,7 +26,7 @@ opt = lapp[[
   --coefL1           (default 0)           L1 penalty on the weights
   --coefL2           (default 0)           L2 penalty on the weights
   -t,--threads       (default 4)           number of threads
-  -g,--gpu           (default -1)          on gpu 
+  -g,--gpu           (default -1)          on gpu
   -d,--noiseDim      (default 100)         dimensionality of noise vector
   --K                (default 1)           number of iterations to optimize D for
   -w, --window       (default 2)           windsow id of sample image
@@ -206,7 +205,6 @@ while true do
         end
       end
     end
---    debugger.enter()
     disp.image(to_plot, {win=opt.window, width=500, labels=labels})
     if opt.gpu then
       torch.setdefaulttensortype('torch.CudaTensor')
