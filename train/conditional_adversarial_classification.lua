@@ -53,7 +53,7 @@ function adversarial.train(dataset)
 
       -- backward pass 
       local dD_do = criterion_D:backward(outputs[1], targets_D)
-      local dC_do = criterion_C:backward(outputs[2], targets_C) 
+      local dC_do = torch.zeros(outputs[2]:size())
       model_D:backward({inputs, cond_inputs}, {dD_do, dC_do})
 
       -- penalties (L1 and L2):
@@ -70,6 +70,39 @@ function adversarial.train(dataset)
         local c
         if outputs[1][i][1] > 0.5 then c = 2 else c = 1 end
         confusion_D:add(c, targets_D[i]+1)
+      end
+
+      return f,gradParameters_D
+    end
+
+    ----------------------------------------------------------------------
+    -- create closure to evaluate f(X) and df/dX of classifier 
+    local fevalC = function(x)
+      collectgarbage()
+      if x ~= parameters_D then -- get new parameters
+        parameters_D:copy(x)
+      end
+
+      gradParameters_D:zero() -- reset gradients
+      cond_inputs:zero() -- make sure cond inputs don't have class info
+
+      --  forward pass
+      local outputs = model_D:forward({inputs, cond_inputs})
+      local f = criterion_C:forward(outputs[2], targets_C)
+
+      -- backward pass 
+      local dD_do =  torch.zeros(outputs[1]:size())
+      local dC_do = criterion_C:backward(outputs[2], targets_C) 
+      model_D:backward({inputs, cond_inputs}, {dD_do, dC_do})
+
+      -- penalties (L1 and L2):
+      if opt.coefL1 ~= 0 or opt.coefL2 ~= 0 then
+        local norm,sign= torch.norm,torch.sign
+        -- Loss:
+        f = f + opt.coefL1 * norm(parameters_D,1)
+        f = f + opt.coefL2 * norm(parameters_D,2)^2/2
+        -- Gradients:
+        gradParameters_D:add( sign(parameters_D):mul(opt.coefL1) + parameters_D:clone():mul(opt.coefL2) )
       end
 
       -- update confusion_C (add 1 since classes are binary)
@@ -132,6 +165,8 @@ function adversarial.train(dataset)
       end
 
       optim.sgd(fevalD, parameters_D, sgdState_D)
+      cond_inputs:zero()
+      optim.sgd(fevalC, parameters_D, sgdState_D)
 
       -- (1.2) Sampled data
       noise_inputs:uniform(-1, 1)
@@ -145,6 +180,8 @@ function adversarial.train(dataset)
       targets_D:fill(0)
 
       optim.sgd(fevalD, parameters_D, sgdState_D)
+      cond_inputs:zero()
+      optim.sgd(fevalC, parameters_D, sgdState_D)
     end -- end for K
 
     ----------------------------------------------------------------------
@@ -176,7 +213,7 @@ function adversarial.train(dataset)
 
   -- save/log current net
   if epoch % opt.saveFreq == 0 then
-    local filename = paths.concat(opt.save, 'adversarial.net')
+    local filename = paths.concat(opt.save, 'conditional_adversarial.net')
     os.execute('mkdir -p ' .. sys.dirname(filename))
     if paths.filep(filename) then
       os.execute('mv ' .. filename .. ' ' .. filename .. '.old')
@@ -234,6 +271,9 @@ function adversarial.test(dataset)
       if outputs[1][i][1] > 0.5 then c = 2 else c = 1 end
       confusion_D:add(c, targets_D[i]+1)
     end
+
+    cond_inputs:zero()
+    local outputs = model_D:forward({inputs, cond_inputs})
     -- update confusion_C (add 1 since classes are binary)
     for i = 1,opt.batchSize do
       max, ind = torch.max(outputs[2][i], 1)
