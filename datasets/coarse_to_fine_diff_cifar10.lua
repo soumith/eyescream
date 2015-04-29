@@ -52,38 +52,35 @@ function cifar.loadDataset(isTrain, start, stop)
   dataset.data = data -- on cpu
   dataset.labels = labels
 
-  dataset.coarseData = torch.Tensor(N, 3, cifar.coarseSize, cifar.coarseSize)
+  dataset.coarseData = torch.Tensor(N, 3, cifar.fineSize, cifar.fineSize)
   dataset.fineData = torch.Tensor(N, 3, cifar.fineSize, cifar.fineSize)
   dataset.diffData = torch.Tensor(N, 3, cifar.fineSize, cifar.fineSize)
 
   -- Coarse data
   function dataset:makeCoarse()
     for i = 1,N do
-      self.coarseData[i][1] = image.scale(self.data[i][1], cifar.coarseSize, cifar.coarseSize)
-      self.coarseData[i][2] = image.scale(self.data[i][2], cifar.coarseSize, cifar.coarseSize)
-      self.coarseData[i][3] = image.scale(self.data[i][3], cifar.coarseSize, cifar.coarseSize)
+      for c=1,3 do
+        local tmp = image.scale(self.data[i][c], cifar.coarseSize, cifar.coarseSize)
+        self.coarseData[i][c] = image.scale(tmp, cifar.fineSize, cifar.fineSize)
+      end
     end
   end
 
   -- Fine data
   function dataset:makeFine()
     for i = 1,N do
-      self.fineData[i][1] = image.scale(self.data[i][1], cifar.fineSize, cifar.fineSize)
-      self.fineData[i][2] = image.scale(self.data[i][2], cifar.fineSize, cifar.fineSize)
-      self.fineData[i][3] = image.scale(self.data[i][3], cifar.fineSize, cifar.fineSize)
+      for c=1,3 do
+        self.fineData[i][c] = image.scale(self.data[i][c], cifar.fineSize, cifar.fineSize)
+      end
     end
   end
 
   -- Diff (coarse - fine)
   function dataset:makeDiff()
     for i=1,N do
-      self.diffData[i][1] = image.scale(self.coarseData[i][1]:float(), cifar.fineSize, cifar.fineSize)
-      self.diffData[i][2] = image.scale(self.coarseData[i][2]:float(), cifar.fineSize, cifar.fineSize)
-      self.diffData[i][3] = image.scale(self.coarseData[i][3]:float(), cifar.fineSize, cifar.fineSize)
-
-      self.diffData[i][1]:add(-1, self.fineData[i][1])
-      self.diffData[i][2]:add(-1, self.fineData[i][2])
-      self.diffData[i][3]:add(-1, self.fineData[i][3])
+      for c = 1,3 do
+        self.diffData[i][c] = torch.add(self.fineData[i][c], -1, self.coarseData[i][c])
+      end
     end
   end
 

@@ -55,10 +55,10 @@ end
 
 opt.coarseSize = 16
 opt.fineSize = 32
-opt.noiseDim = {1, opt.coarseSize, opt.coarseSize}
+opt.noiseDim = {1, opt.fineSize, opt.fineSize}
 classes = {'0','1'}
 opt.geometry = {3, opt.fineSize, opt.fineSize}
-opt.condDim = {3, opt.coarseSize, opt.coarseSize}
+opt.condDim = {3, opt.fineSize, opt.fineSize}
 
 function setWeights(weights, std)
   weights:randn(weights:size())
@@ -70,31 +70,39 @@ local input_sz = opt.geometry[1] * opt.geometry[2] * opt.geometry[3]
 if opt.network == '' then
   ----------------------------------------------------------------------
   -- define D network to train
-  x_I = nn.Identity()()
-  x_C = nn.Identity()()
-  i1 = nn.SpatialConvolutionUpsample(3, 64, 5, 5, 1)(x_I)
-  c1 = nn.SpatialConvolutionUpsample(3, 64, 5, 5, 2)(x_C)
-  c2 = nn.ReLU()(c1)
-  i2 = nn.ReLU()(i1)
-  h1 = nn.JoinTable(2, 2)({i2, c2})
-  local nplanes = 64 
-  h2 = nn.SpatialConvolution(64*2, nplanes, 5, 5)(nn.ReLU()(h1)) -- 28 x 28
-  h3 = nn.Linear(nplanes*28*28, 1)(nn.Dropout()(nn.ReLU()(nn.Reshape(nplanes*28*28)(h2))))
-  h4 = nn.Sigmoid()(h3)
-  model_D = nn.gModule({x_I, x_C}, {h4})
+  local nplanes = 128 
+  model_D = nn.Sequential()
+  model_D:add(nn.CAddTable())
+  model_D:add(nn.SpatialConvolution(3, nplanes, 5, 5)) --28 x 28
+  model_D:add(nn.ReLU())
+  model_D:add(nn.SpatialConvolution(nplanes, nplanes, 5, 5, 2, 2))
+  model_D:add(nn.Reshape(nplanes*12*12))
+  model_D:add(nn.ReLU())
+  model_D:add(nn.Linear(nplanes*12*12, 1))
+  model_D:add(nn.Sigmoid())
 
   ----------------------------------------------------------------------
   -- define G network to train
-  local nplanes = 128
+  --[[
+  local nplanes = 128 
   model_G = nn.Sequential()
   model_G:add(nn.JoinTable(2, 2))
-  model_G:add(nn.SpatialConvolutionUpsample(3+1, nplanes, 5, 5, 1)) -- 3 color channels + conditional
-  --model_G:add(nn.ReLU())
-  --model_G:add(nn.SpatialConvolutionUpsample(nplanes, nplanes, 3, 3, 1)) -- 3 color channels + conditional
-  model_G:add(nn.Sigmoid())
-  model_G:add(nn.SpatialConvolutionUpsample(nplanes, 3, 5, 5, 2)) -- 3 color channels + conditional
+  model_G:add(nn.SpatialConvolutionUpsample(3+1, nplanes, 7, 7, 1)) -- 3 color channels + conditional
+  model_G:add(nn.ReLU())
+  model_G:add(nn.SpatialConvolutionUpsample(nplanes, nplanes, 7, 7, 1)) -- 3 color channels + conditional
+  model_G:add(nn.ReLU())
+  model_G:add(nn.SpatialConvolutionUpsample(nplanes, 3, 5, 5, 1)) -- 3 color channels + conditional
   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
-
+  --]]
+  local nplanes = 256 
+  model_G = nn.Sequential()
+  model_G:add(nn.JoinTable(2, 2))
+  model_G:add(nn.SpatialConvolution(3+1, nplanes, 7, 7, 2, 2, 3)) -- gives 16x16
+  model_G:add(nn.ReLU())
+  model_G:add(nn.SpatialConvolutionUpsample(nplanes, nplanes, 5, 5, 2)) -- 3 color channels + conditional
+  model_G:add(nn.ReLU())
+  model_G:add(nn.SpatialConvolutionUpsample(nplanes, 3, 5, 5, 1)) -- 3 color channels + conditional
+  model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
 else
   print('<trainer> reloading previously trained network: ' .. opt.network)
   tmp = torch.load(opt.network)
@@ -116,9 +124,9 @@ print('Generator network:')
 print(model_G)
 
 local nparams = 0
-for i=1,#model_D.forwardnodes do
-  if model_D.forwardnodes[i].data ~= nil and model_D.forwardnodes[i].data.module ~= nil and model_D.forwardnodes[i].data.module.weight ~= nil then
-    nparams = nparams + model_D.forwardnodes[i].data.module.weight:nElement()
+for i=1,#model_D.modules do
+  if model_D.modules[i].weight ~= nil then
+    nparams = nparams + model_D.modules[i].weight:nElement()
   end
 end
 print('\nNumber of free parameters in D: ' .. nparams)
@@ -197,7 +205,7 @@ sgdState_G = {
 
 -- Get examples to plot
 function getSamples(dataset, N)
-  local N = N or opt.batchSize
+  local N = N or 8 
   local noise_inputs = torch.Tensor(N, opt.noiseDim[1], opt.noiseDim[2], opt.noiseDim[3])
   local cond_inputs = torch.Tensor(N, opt.condDim[1], opt.condDim[2], opt.condDim[3])
   local gt = torch.Tensor(N, 3, 32, 32)
@@ -214,22 +222,23 @@ function getSamples(dataset, N)
 
   local to_plot = {}
   for i=1,N do
-    local scaled = torch.FloatTensor(3, 32, 32)
-    for c = 1,3 do
-      scaled[c] = image.scale(cond_inputs[i][c]:float(), 32, 32)
-    end
-    local pred = scaled:clone()
-    pred:add(-1, samples[i]:float())
+    local pred = torch.add(cond_inputs[i]:float(), samples[i]:float())
 
     to_plot[#to_plot+1] = gt[i]:float()
     to_plot[#to_plot+1] = pred
-    to_plot[#to_plot+1] = scaled
-
+    to_plot[#to_plot+1] = cond_inputs[i]:float() 
+    to_plot[#to_plot+1] = samples[i]:float() 
   end
 
   return to_plot
 end
 
+--[[
+local to_plot = getSamples(valData, 16) 
+torch.setdefaulttensortype('torch.FloatTensor')
+disp.image(to_plot, {win=opt.window, width=600})
+debugger.enter()
+--]]
 -- training loop
 while true do
   -- train/test
@@ -243,7 +252,7 @@ while true do
 
   -- plot errors
   if opt.plot  and epoch and epoch % 1 == 0 then
-    local to_plot = getSamples(valData, 27) 
+    local to_plot = getSamples(valData, 16) 
     torch.setdefaulttensortype('torch.FloatTensor')
 
     trainLogger:style{['% mean class accuracy (train set)'] = '-'}
