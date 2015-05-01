@@ -83,7 +83,7 @@ if opt.network == '' then
 
   ----------------------------------------------------------------------
   -- define G network to train
-  --[[
+  
   local nplanes = 128 
   model_G = nn.Sequential()
   model_G:add(nn.JoinTable(2, 2))
@@ -93,7 +93,8 @@ if opt.network == '' then
   model_G:add(nn.ReLU())
   model_G:add(nn.SpatialConvolutionUpsample(nplanes, 3, 5, 5, 1)) -- 3 color channels + conditional
   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
-  --]]
+ 
+  --[[
   local nplanes = 256 
   model_G = nn.Sequential()
   model_G:add(nn.JoinTable(2, 2))
@@ -103,6 +104,7 @@ if opt.network == '' then
   model_G:add(nn.ReLU())
   model_G:add(nn.SpatialConvolutionUpsample(nplanes, 3, 5, 5, 1)) -- 3 color channels + conditional
   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
+  --]]
 else
   print('<trainer> reloading previously trained network: ' .. opt.network)
   tmp = torch.load(opt.network)

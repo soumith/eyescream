@@ -10,6 +10,11 @@ cifar.path_dataset = '/home/denton/data/cifar10/cifar-10-batches-t7/'
 cifar.coarseSize = 16
 cifar.fineSize = 32
 
+function cifar.init(fineSize, coarseSize)
+  cifar.fineSize = fineSize
+  cifar.coarseSize = coarseSize
+end
+
 -- XXX: Auto contrast normalize in laod script
 
 function cifar.loadTrainSet(start, stop)
