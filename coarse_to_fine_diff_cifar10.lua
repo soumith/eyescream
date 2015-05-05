@@ -15,8 +15,6 @@ function cifar.init(fineSize, coarseSize)
   cifar.coarseSize = coarseSize
 end
 
--- XXX: Auto contrast normalize in laod script
-
 function cifar.loadTrainSet(start, stop)
    return cifar.loadDataset(true, start, stop)
 end

@@ -26,8 +26,6 @@ opt = lapp[[
   -b,--batchSize     (default 100)          batch size
   -m,--momentum      (default 0)           momentum, for SGD only
   -i,--maxIter       (default 3)           maximum nb of iterations per batch, for LBFGS
-  --coefL1           (default 0)           L1 penalty on the weights
-  --coefL2           (default 0)           L2 penalty on the weights
   -t,--threads       (default 4)           number of threads
   -g,--gpu           (default -1)          on gpu 
   -d,--noiseDim      (default 100)         dimensionality of noise vector
