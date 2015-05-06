@@ -71,28 +71,28 @@ function adversarial.train(dataset)
       ----------------------------------------------------------------------
       -- (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
       for k = 1, opt.K do
+	 assert (opt.batchSize % 2 == 0)
 	 -- (1.1) Real data 
-	 targets:fill(1)
 	 local k = 1
 	 for i = t,math.min(t+opt.batchSize-1,dataset:size()) do
 	    -- load new sample
 	    local sample = dataset[i]
-	    inputs[k]:copy(sample[1]:view(img_sz))
+	    inputs[k]:copy(sample[1]:view(img_sz))	    
 	    cond_inputs[k]:copy(sample[3]:view(opt.condDim))
 	    k = k + 1
 	 end
-	 optim.sgd(fevalD, parameters_D, sgdState_D)
+	 targets:narrow(1, 1, opt.batchSize/2):fill(1)
 
 	 -- (1.2) Sampled data
 	 noise_inputs:uniform(-1, 1)
-	 for i = 1,opt.batchSize do
+	 for i = 1,opt.batchSize/2 do
 	    local idx = math.random(dataset:size())
 	    local sample = dataset[idx]
-	    cond_inputs[i]:copy(sample[3]:view(opt.condDim))
+	    cond_inputs[k + i]:copy(sample[3]:view(opt.condDim))
 	 end
 	 local samples = model_G:forward({noise_inputs, cond_inputs})
-	 inputs:copy(samples)
-	 targets:fill(0)
+	 inputs:narrow(1, k+1, opt.batchSize/2):copy(samples)
+	 targets:narrow(1, k+1, opt.batchSize/2):fill(0)
 	 optim.sgd(fevalD, parameters_D, sgdState_D)
       end -- end for K
 

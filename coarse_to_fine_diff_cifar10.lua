@@ -64,7 +64,7 @@ function cifar.loadDataset(isTrain, start, stop)
     for i = 1,N do
       for c=1,3 do
         local tmp = image.scale(self.data[i][c], cifar.coarseSize, cifar.coarseSize)
-        self.coarseData[i][c] = image.scale(tmp, cifar.fineSize, cifar.fineSize)
+	image.scale(self.coarseData[i][c], tmp, cifar.fineSize, cifar.fineSize)
       end
     end
   end
@@ -73,7 +73,7 @@ function cifar.loadDataset(isTrain, start, stop)
   function dataset:makeFine()
     for i = 1,N do
       for c=1,3 do
-        self.fineData[i][c] = image.scale(self.data[i][c], cifar.fineSize, cifar.fineSize)
+        image.scale(self.fineData[i][c], self.data[i][c], cifar.fineSize, cifar.fineSize)
       end
     end
   end
@@ -82,7 +82,7 @@ function cifar.loadDataset(isTrain, start, stop)
   function dataset:makeDiff()
     for i=1,N do
       for c = 1,3 do
-        self.diffData[i][c] = torch.add(self.fineData[i][c], -1, self.coarseData[i][c])
+	 torch.add(self.diffData[i][c], self.fineData[i][c], -1, self.coarseData[i][c])
       end
     end
   end
@@ -98,7 +98,6 @@ function cifar.loadDataset(isTrain, start, stop)
   local labelvector = torch.zeros(10)
 
   setmetatable(dataset, {__index = function(self, index)
-       --local input = self.fineData[index]
        local diff = self.diffData[index]
        local cond = self.coarseData[index]
        local class = self.labels[index]
