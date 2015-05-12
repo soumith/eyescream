@@ -104,7 +104,7 @@ local function plot(N)
 
    -- Generate samples
    noise_inputs:uniform(-1, 1)
-   local indexStart = torch.random(nTest-N-1)
+   local indexStart = torch.random(nTest-N-N)
    local indexEnd = (indexStart + opt.batchSize - 1)
    donkeys:addjob(
       function() return makeData(testLoader:get(indexStart, indexEnd)) end,
