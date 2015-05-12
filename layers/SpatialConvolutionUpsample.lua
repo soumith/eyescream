@@ -5,7 +5,7 @@ function SpatialConvolutionUpsample:__init(nInputPlane, nOutputPlane, kW, kH, fa
    assert(kW and kH and nInputPlane and nOutputPlane)
    assert(kW % 2 == 1, 'kW has to be odd')
    assert(kH % 2 == 1, 'kH has to be odd')
-   self.factor = 2
+   self.factor = factor
    self.kW = kW
    self.kH = kH
    self.nInputPlaneU = nInputPlane
