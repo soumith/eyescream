@@ -84,7 +84,7 @@ local function test()
    confusion:zero()
    model_D:evaluate()
    model_G:evaluate()
-   for i=1,10 do -- nTest/opt.batchSize do -- nTest is set in data.lua
+   for i=1,nTest/opt.batchSize do -- nTest is set in data.lua
       xlua.progress(i, math.floor(nTest/opt.batchSize))
       local indexStart = (i-1) * opt.batchSize + 1
       local indexEnd = (indexStart + opt.batchSize - 1)
