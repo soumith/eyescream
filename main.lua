@@ -2,7 +2,6 @@ require 'torch'
 require 'cunn'
 require 'optim'
 require 'image'
-paths.dofile('coarse_to_fine_diff_cifar10.lua')
 require 'paths'
 disp = require 'display'
 paths.dofile('layers/SpatialConvolutionUpsample.lua')
@@ -64,6 +63,8 @@ sgdState_G = {
 }
 
 local function train()
+   model_D:training()
+   model_G:training()
    for i=1,opt.epochSize do
       xlua.progress(i, opt.epochSize)
       donkeys:addjob(
@@ -77,13 +78,24 @@ local function train()
 end
 
 local function test()
+   model_D:evaluate()
+   model_G:evaluate()
+   for i=1,nTest/opt.batchSize do -- nTest is set in data.lua
+      xlua.progress(i, math.floor(nTest/opt.batchSize))
+      local indexStart = (i-1) * opt.batchSize + 1
+      local indexEnd = (indexStart + opt.batchSize - 1)
+      donkeys:addjob(function() return makeData(testLoader:get(indexStart, indexEnd)) end,
+         adversarial.test)
+   end
+   donkeys:synchronize()
+   cutorch.synchronize()
 end
 
 local function plot()
 end
 
 while true do
-   train()
+   -- train()
    test()
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
