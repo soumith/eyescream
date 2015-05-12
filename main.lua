@@ -3,7 +3,6 @@ require 'cunn'
 require 'optim'
 require 'image'
 require 'paths'
-disp = require 'display'
 paths.dofile('layers/SpatialConvolutionUpsample.lua')
 
 ----------------------------------------------------------------------
@@ -63,6 +62,7 @@ sgdState_G = {
 }
 
 local function train()
+   print("Training epoch: " .. epoch)
    confusion:zero()
    model_D:training()
    model_G:training()
@@ -80,10 +80,11 @@ local function train()
 end
 
 local function test()
+   print("Testing epoch: " .. epoch)
    confusion:zero()
    model_D:evaluate()
    model_G:evaluate()
-   for i=1,nTest/opt.batchSize do -- nTest is set in data.lua
+   for i=1,10 do -- nTest/opt.batchSize do -- nTest is set in data.lua
       xlua.progress(i, math.floor(nTest/opt.batchSize))
       local indexStart = (i-1) * opt.batchSize + 1
       local indexEnd = (indexStart + opt.batchSize - 1)
@@ -95,7 +96,33 @@ local function test()
    print(confusion)
 end
 
-local function plot()
+local function plot(N)
+   local N = N or 8
+   local noise_inputs = torch.CudaTensor(N, opt.noiseDim[1], opt.noiseDim[2], opt.noiseDim[3])
+   local cond_inputs = torch.CudaTensor(N, opt.condDim[1], opt.condDim[2], opt.condDim[3])
+   local gt = torch.CudaTensor(N, 3, opt.condDim[2], opt.condDim[3])
+
+   -- Generate samples
+   noise_inputs:uniform(-1, 1)
+   local indexStart = torch.random(nTest-N-1)
+   local indexEnd = (indexStart + opt.batchSize - 1)
+   donkeys:addjob(
+      function() return makeData(testLoader:get(indexStart, indexEnd)) end,
+      function(d) cond_inputs:copy(d[3][{{1,N},{},{},{}}]); gt:copy(d[4][{{1,N},{},{},{}}]); end
+   )
+   donkeys:synchronize()
+   local samples = model_G:forward({noise_inputs, cond_inputs})
+
+   local to_plot = {}
+   for i=1,N do
+      local pred = torch.add(cond_inputs[i]:float(), samples[i]:float())
+      to_plot[#to_plot+1] = gt[i]:float()
+      to_plot[#to_plot+1] = pred
+      to_plot[#to_plot+1] = cond_inputs[i]:float()
+      to_plot[#to_plot+1] = samples[i]:float()
+   end
+   local disp = require 'display'
+   disp.image(to_plot, {win=opt.window, width=600})
 end
 
 epoch = 1
@@ -107,6 +134,6 @@ while true do
    sgdState_G.momentum = math.min(sgdState_G.momentum + 0.0008, 0.7)
    sgdState_G.learningRate = math.max(sgdState_G.learningRate / 1.000004, 0.000001)
 
-   plot()
+   if opt.plot then plot(16) end
    epoch = epoch + 1
 end

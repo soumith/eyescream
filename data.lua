@@ -25,15 +25,15 @@ do -- start K datathreads (donkeys)
    end
 end
 
-nClasses = nil
-classes = nil
-donkeys:addjob(function() return trainLoader.classes end, function(c) classes = c end)
-donkeys:synchronize()
-nClasses = #classes
-assert(nClasses, "Failed to get nClasses")
-print('nClasses: ', nClasses)
 os.execute('mkdir -p '.. opt.save)
-torch.save(paths.concat(opt.save, 'classes.t7'), classes)
+-- nClasses = nil
+-- classes = nil
+-- donkeys:addjob(function() return trainLoader.classes end, function(c) classes = c end)
+-- donkeys:synchronize()
+-- nClasses = #classes
+-- assert(nClasses, "Failed to get nClasses")
+-- print('nClasses: ', nClasses)
+-- torch.save(paths.concat(opt.save, 'classes.t7'), classes)
 
 nTest = 0
 donkeys:addjob(function() return testLoader:size() end, function(c) nTest = c end)
