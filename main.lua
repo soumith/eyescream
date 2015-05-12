@@ -63,6 +63,7 @@ sgdState_G = {
 }
 
 local function train()
+   confusion:zero()
    model_D:training()
    model_G:training()
    for i=1,opt.epochSize do
@@ -75,9 +76,11 @@ local function train()
    end
    donkeys:synchronize()
    cutorch.synchronize()
+   print(confusion)
 end
 
 local function test()
+   confusion:zero()
    model_D:evaluate()
    model_G:evaluate()
    for i=1,nTest/opt.batchSize do -- nTest is set in data.lua
@@ -89,13 +92,15 @@ local function test()
    end
    donkeys:synchronize()
    cutorch.synchronize()
+   print(confusion)
 end
 
 local function plot()
 end
 
+epoch = 1
 while true do
-   -- train()
+   train()
    test()
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
@@ -103,4 +108,5 @@ while true do
    sgdState_G.learningRate = math.max(sgdState_G.learningRate / 1.000004, 0.000001)
 
    plot()
+   epoch = epoch + 1
 end
