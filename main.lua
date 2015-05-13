@@ -42,10 +42,11 @@ opt.noiseDim = {1, opt.fineSize, opt.fineSize}
 classes = {'0','1'}
 opt.geometry = {3, opt.fineSize, opt.fineSize}
 opt.condDim = {3, opt.fineSize, opt.fineSize}
+opt.run_id = math.random(1,10000000)
 
 paths.dofile('model.lua')
 paths.dofile('data.lua')
-adversarial = paths.dofile('conditional_adversarial.lua')
+adversarial = paths.dofile('train.lua')
 
 -- this matrix records the current confusion across classes
 confusion = optim.ConfusionMatrix(classes)
@@ -121,19 +122,24 @@ local function plot(N)
       to_plot[#to_plot+1] = cond_inputs[i]:float()
       to_plot[#to_plot+1] = samples[i]:float()
    end
-   local disp = require 'display'
-   disp.image(to_plot, {win=opt.window, width=600})
+   to_plot = image.toDisplayTensor{input=to_plot, scaleeach=true, nrow=8}
+   image.save('gen_' .. opt.run_id .. '_' .. epoch .. '.png', to_plot)
+   if opt.plot then
+      local disp = require 'display'
+      disp.image(to_plot, {win=opt.window, width=600})
+   end
+
 end
 
 epoch = 1
---while true do
+while true do
    train()
-   --test()
+   -- test()
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
    sgdState_G.momentum = math.min(sgdState_G.momentum + 0.0008, 0.7)
    sgdState_G.learningRate = math.max(sgdState_G.learningRate / 1.000004, 0.000001)
 
-   if opt.plot then plot(16) end
+   plot(16)
    epoch = epoch + 1
--- end
+end

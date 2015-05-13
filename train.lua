@@ -85,9 +85,9 @@ function adversarial.train(inputs_all)
    targets:fill(1)
    optim.sgd(fevalG, parameters_G, sgdState_G)
    batchNumber = batchNumber + 1
-   print(('Epoch: [%d][%d/%d]\tTime %.3f DataTime %.3f Err_G %.4f Err_D %.4f'):format(
-         epoch, batchNumber, opt.epochSize, sampleTimer:time().real, dataLoadingTime, err_G, err_D))
    cutorch.synchronize(); collectgarbage();
+   -- xlua.progress(batchNumber, opt.epochSize)
+   print(('Epoch: [%d][%d/%d]\tTime %.3f DataTime %.3f Err_G %.4f Err_D %.4f'):format(epoch, batchNumber, opt.epochSize, sampleTimer:time().real, dataLoadingTime, err_G, err_D))
    dataTimer:reset()
 end
 
