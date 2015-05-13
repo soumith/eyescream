@@ -3,7 +3,7 @@ require 'cunn'
 require 'optim'
 require 'image'
 require 'paths'
-paths.dofile('layers/SpatialConvolutionUpsample.lua')
+local pl=require 'pl'
 
 ----------------------------------------------------------------------
 -- parse command-line options
@@ -66,8 +66,8 @@ local function train()
    confusion:zero()
    model_D:training()
    model_G:training()
+   batchNumber = 0
    for i=1,opt.epochSize do
-      xlua.progress(i, opt.epochSize)
       donkeys:addjob(
          function()
             return makeData(trainLoader:sample(opt.batchSize))
@@ -126,9 +126,9 @@ local function plot(N)
 end
 
 epoch = 1
-while true do
+--while true do
    train()
-   test()
+   --test()
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
    sgdState_G.momentum = math.min(sgdState_G.momentum + 0.0008, 0.7)
@@ -136,4 +136,4 @@ while true do
 
    if opt.plot then plot(16) end
    epoch = epoch + 1
-end
+-- end

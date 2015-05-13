@@ -9,9 +9,14 @@ local targets      = torch.CudaTensor(opt.batchSize)
 local inputs       = torch.CudaTensor(opt.batchSize, unpack(opt.geometry))               -- original full-res image - low res image
 local cond_inputs  = torch.CudaTensor(opt.batchSize, unpack(opt.condDim))  -- low res image blown up and differenced from original
 local noise_inputs = torch.CudaTensor(opt.batchSize, unpack(opt.noiseDim)) -- pure noise
+local sampleTimer = torch.Timer()
+local dataTimer = torch.Timer()
 
 -- training function
 function adversarial.train(inputs_all)
+   local dataLoadingTime = dataTimer:time().real; sampleTimer:reset(); -- timers
+   local err_G, err_D
+
    -- inputs_all = {diff, label, coarse, fine}
    inputs:copy(inputs_all[1])
    cond_inputs:copy(inputs_all[3])
@@ -23,7 +28,7 @@ function adversarial.train(inputs_all)
 
       --  forward pass
       local outputs = model_D:forward({inputs, cond_inputs})
-      local f = criterion:forward(outputs, targets)
+      err_D= criterion:forward(outputs, targets)
 
       -- backward pass
       local df_do = criterion:backward(outputs, targets)
@@ -34,7 +39,7 @@ function adversarial.train(inputs_all)
       outputs[outputs:le(0.5)] = 1
       confusion:batchAdd(outputs, targets + 1)
 
-      return f,gradParameters_D
+      return err_D,gradParameters_D
    end
    ----------------------------------------------------------------------
    -- create closure to evaluate f(X) and df/dX of generator
@@ -45,7 +50,7 @@ function adversarial.train(inputs_all)
       -- forward pass
       local hallucinations = model_G:forward({noise_inputs, cond_inputs})
       local outputs = model_D:forward({hallucinations, cond_inputs})
-      local f = criterion:forward(outputs, targets)
+      err_G = criterion:forward(outputs, targets)
 
       --  backward pass
       local df_hallucinations = criterion:backward(outputs, targets)
@@ -53,7 +58,7 @@ function adversarial.train(inputs_all)
       local df_do = model_D.modules[1].gradInput[1]
       model_G:backward({noise_inputs, cond_inputs}, df_do)
 
-      return f,gradParameters_G
+      return err_G,gradParameters_G
    end
    ----------------------------------------------------------------------
    -- (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
@@ -79,6 +84,11 @@ function adversarial.train(inputs_all)
    noise_inputs:uniform(-1, 1)
    targets:fill(1)
    optim.sgd(fevalG, parameters_G, sgdState_G)
+   batchNumber = batchNumber + 1
+   print(('Epoch: [%d][%d/%d]\tTime %.3f DataTime %.3f Err_G %.4f Err_D %.4f'):format(
+         epoch, batchNumber, opt.epochSize, sampleTimer:time().real, dataLoadingTime, err_G, err_D))
+   cutorch.synchronize(); collectgarbage();
+   dataTimer:reset()
 end
 
 -- test function
