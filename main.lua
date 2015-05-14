@@ -123,7 +123,7 @@ local function plot(N)
       to_plot[#to_plot+1] = samples[i]:float()
    end
    to_plot = image.toDisplayTensor{input=to_plot, scaleeach=true, nrow=8}
-   image.save('gen_' .. opt.run_id .. '_' .. epoch .. '.png', to_plot)
+   image.save(opt.save .. '/' .. 'gen_' .. opt.run_id .. '_' .. epoch .. '.png', to_plot)
    if opt.plot then
       local disp = require 'display'
       disp.image(to_plot, {win=opt.window, width=600})
@@ -134,7 +134,7 @@ end
 epoch = 1
 while true do
    train()
-   -- test()
+   test()
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
    sgdState_G.momentum = math.min(sgdState_G.momentum + 0.0008, 0.7)
