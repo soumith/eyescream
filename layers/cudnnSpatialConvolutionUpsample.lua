@@ -1,7 +1,7 @@
 require 'cudnn'
 local SpatialConvolutionUpsample, parent = torch.class('cudnn.SpatialConvolutionUpsample','cudnn.SpatialConvolution')
 
-function SpatialConvolutionUpsample:__init(nInputPlane, nOutputPlane, kW, kH, factor)
+function SpatialConvolutionUpsample:__init(nInputPlane, nOutputPlane, kW, kH, factor, groups)
    factor = factor or 2
    assert(kW and kH and nInputPlane and nOutputPlane)
    assert(kW % 2 == 1, 'kW has to be odd')
@@ -12,7 +12,7 @@ function SpatialConvolutionUpsample:__init(nInputPlane, nOutputPlane, kW, kH, fa
    self.nInputPlaneU = nInputPlane
    self.nOutputPlaneU = nOutputPlane
    parent.__init(self, nInputPlane, nOutputPlane * factor * factor,
-                 kW, kH, 1, 1, (kW-1)/2, (kH-1)/2)
+                 kW, kH, 1, 1, (kW-1)/2, (kH-1)/2, groups)
 end
 
 function SpatialConvolutionUpsample:updateOutput(input)

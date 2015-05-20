@@ -1,4 +1,7 @@
 require 'cudnn'
+paths.dofile('layers/cudnnSpatialConvolutionUpsample.lua')
+require 'fbcunn'
+
 -- square kernels.
 -- pool size == stride
 -- poolType = max,l2,avg,maxout,poolout,mixed
@@ -15,7 +18,7 @@ function generateModelG(minLayers, maxLayers, minPlanes, maxPlanes, minKH, maxKH
    local function nPlanes()
       return torch.random(minPlanes, maxPlanes) * 16 -- planes are always a multiple of 16
    end
-   local function kH() 
+   local function kH()
       return math.floor((torch.random(minKH, maxKH)/2)) * 2 + 1 -- odd kernel size
    end
    local function getFactor()
@@ -26,55 +29,62 @@ function generateModelG(minLayers, maxLayers, minPlanes, maxPlanes, minKH, maxKH
       end
    end
 
-   local model = nn.Sequential()
-   local factor = getFactor()
-   local planes = nPlanes()
-   local k = kH()
-   model:add(cudnn.SpatialConvolutionUpsample(3+1, planes, k, k, factor, 1))
-   if factor > 1 then
-      planes = planes / factor
-      local t
-      if poolType == 'maxout' then
-	 t = 1
-      elseif poolType == 'poolout' then
-	 t = 2
-      elseif poolType == 'mixed' then
-	 t = torch.random(1,2)
-      end
-      if t == 1 then
-	 model:add(nn.VolumetricMaxPooling(factor, 1, 1))
-      elseif t == 2 then
-	 model:add(nn.FeatureLPPooling(2,2,2,true))
+   local function pool(model, factor)
+      if factor > 1 then
+         local t
+         if poolType == 'maxout' then t = 1
+         elseif poolType == 'poolout' then t = 2
+         elseif poolType == 'mixed' then t = torch.random(1,2) end
+         if t == 1 then
+            print('P ' .. 'MOut ' .. factor)
+            model:add(nn.VolumetricMaxPooling(factor, 1, 1))
+         elseif t == 2 then
+            print('P ' .. 'LPOut ' .. factor)
+            model:add(nn.FeatureLPPooling(2,2,2,true))
+         end
       end
    end
 
-   local planesIn = planes
+   local model = nn.Sequential()
+   local factor = getFactor()
+   local planesOut = torch.random(1,5) * 16
+   local k = kH()
+   print('C ' .. 4 .. '->' .. planesOut .. '/' .. 1 .. ' ' .. k .. 'x' .. k)
+   model:add(cudnn.SpatialConvolutionUpsample(3+1, planesOut, k, k, 1, 1))
+   pool(model, factor)
+   planesOut = planesOut / factor
 
-   for i=1,nLayers-1 do
+   local planesIn = planesOut
+
+   for i=1,nLayers-2 do
       local factor = getFactor()
       local planesOut = nPlanes()
       local k = kH()
-      local groups = math.pow(2, torch.random(nGroupsMin, nGroupsMax))
-      model:add(cudnn.SpatialConvolutionUpsample(planesIn, planesOut, k, k, factor, groups))
-      if factor > 1 then
-	 planesOut = planesOut / factor
-	 local t
-	 if poolType == 'maxout' then
-	    t = 1
-	 elseif poolType == 'poolout' then
-	    t = 2
-	 elseif poolType == 'mixed' then
-	    t = torch.random(1,2)
-	 end
-	 if t == 1 then
-	    model:add(nn.VolumetricMaxPooling(factor, 1, 1))
-	 elseif t == 2 then
-	    model:add(nn.FeatureLPPooling(2,2,2,true))
-	 end
+      local groups = 13
+      while planesIn % groups ~= 0 or planesOut % groups ~= 0 do
+         local pow
+         if planesOut > 256 or planesIn > 256 then
+            pow = torch.random(2, nGroupsMax)
+         else
+            pow = torch.random(nGroupsMin, nGroupsMax)
+         end
+         groups = math.pow(2, pow)
+         -- print('here: ', pow, groups, planesIn, planesOut)
       end
+      print('C ' .. planesIn .. '->' .. planesOut .. '/' .. groups .. ' ' .. k .. 'x' .. k)
+      model:add(cudnn.SpatialConvolutionUpsample(planesIn, planesOut, k, k, 1, groups))
+      pool(model, factor)
+      planesOut = planesOut / factor
       planesIn = planesOut
    end
-   print(model)
+   print('C ' .. planesIn .. '->' .. 3 .. '/' .. 1 .. ' ' .. k .. 'x' .. k)
+   model:add(cudnn.SpatialConvolutionUpsample(planesIn, 3, k, k, 1, 1))
+
+   -- print(model)
+   model=model:cuda()
+   local input = torch.zeros(10,4,32,32):cuda()
+   model:forward(input)
+   return model
 end
 
-generateModelG(2,10,1,64,3,11, 'mixed', 0, 4)
+modelG = generateModelG(2,5,1,64,3,11, 'mixed', 0, 4)
