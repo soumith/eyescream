@@ -13,7 +13,7 @@ local sampleTimer = torch.Timer()
 local dataTimer = torch.Timer()
 
 -- training function
-function adversarial.train(inputs_all)
+function adversarial.train(inputs_all, inputs_all2)
    local dataLoadingTime = dataTimer:time().real; sampleTimer:reset(); -- timers
    local err_G, err_D
 
@@ -24,11 +24,12 @@ function adversarial.train(inputs_all)
    -- create closure to evaluate f(X) and df/dX of discriminator
    local fevalD = function(x)
       collectgarbage()
+      cond_inputs:copy(inputs_all2[3])
       gradParameters_D:zero() -- reset gradients
 
       --  forward pass
       local outputs = model_D:forward({inputs, cond_inputs})
-      err_D= criterion:forward(outputs, targets)
+      err_D = criterion:forward(outputs, targets)
 
       -- backward pass
       local df_do = criterion:backward(outputs, targets)

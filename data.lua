@@ -40,3 +40,38 @@ donkeys:addjob(function() return testLoader:size() end, function(c) nTest = c en
 donkeys:synchronize()
 assert(nTest > 0, "Failed to get nTest")
 print('nTest: ', nTest)
+
+
+function sanitize(net)
+   local list = net:listModules()
+   for _,val in ipairs(list) do
+      for name,field in pairs(val) do
+         if torch.type(field) == 'cdata' then val[name] = nil end
+         if name == 'homeGradBuffers' then val[name] = nil end
+         if name == 'input_gpu' then val['input_gpu'] = {} end
+         if name == 'gradOutput_gpu' then val['gradOutput_gpu'] = {} end
+         if name == 'gradInput_gpu' then val['gradInput_gpu'] = {} end
+         if (name == 'output' or name == 'gradInput') then
+            if torch.isTensor(val[name]) then
+               val[name] = field.new()
+            end
+         end
+         if  name == 'buffer' or name == 'buffer2' or name == 'normalized'
+         or name == 'centered' or name == 'addBuffer' then
+            val[name] = nil
+         end
+      end
+   end
+   return net
+end
+
+function merge_table(t1, t2)
+   local t = {}
+   for k,v in pairs(t2) do
+      t[k] = v
+   end
+   for k,v in pairs(t1) do
+      t[k] = v
+   end
+   return t
+end

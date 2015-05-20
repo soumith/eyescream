@@ -6,12 +6,13 @@ paths.dofile('imagenet.lua')
 ------------------------------------------
 
 -- a cache file of the training metadata (if doesnt exist, will be created)
-os.execute('mkdir -p ' .. opt.cache)
-local trainCache = paths.concat(opt.cache, 'trainCache.t7')
-local testCache = paths.concat(opt.cache, 'testCache.t7')
-local meanstdCache = paths.concat(opt.cache, 'meanstdCache.t7')
+local cache = "/gfsai-cached/ai-group/datasets/imagenet"
+local trainCache = paths.concat(cache, 'trainCache.t7')
+local testCache = paths.concat(cache, 'testCache.t7')
+local meanstdCache = paths.concat(cache, 'meanstdCache.t7')
 
 -- Check for existence of opt.data
+opt.data = '/data/local/imagenet-fetch/256'
 if not os.execute('cd ' .. opt.data) then
     error(("could not chdir to '%s'"):format(opt.data))
 end

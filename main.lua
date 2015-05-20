@@ -4,6 +4,7 @@ require 'optim'
 require 'image'
 require 'paths'
 local pl=require 'pl'
+bistro = require 'bistro'
 
 ----------------------------------------------------------------------
 -- parse command-line options
@@ -12,32 +13,31 @@ opt = lapp[[
   --saveFreq         (default 10)          save every saveFreq epochs
   -n,--network       (default "")          reload pretrained network
   -p,--plot                                plot while training
-  -r,--learningRate  (default 0.01)        learning rate, for SGD only
+  -r,--learningRateD (default 0.01)        learning rate, for SGD only
+  --learningRateG    (default 0.01)        learning rate, for SGD only
   -b,--batchSize     (default 128)         batch size
   -m,--momentum      (default 0)           momentum, for SGD only
-  -i,--maxIter       (default 3)           maximum nb of iterations per batch, for LBFGS
   -t,--threads       (default 4)           number of threads
-  -g,--gpu           (default 1)          on gpu
   -d,--noiseDim      (default 100)         dimensionality of noise vector
   --K                (default 1)           number of iterations to optimize D for
   -w, --window       (default 3)           windsow id of sample image
   --nDonkeys         (default 2)           number of data loading threads
   --cache            (default "cache")     folder to cache metadata
-  --data             (default "/home/awesomebox/imagenet-256/256") folder with imagenet data
   --epochSize        (default 1000)        number of samples per epoch
+  --coarseSize       (default 16)
+  --archgen          (default 16)
 ]]
 
 print(opt)
 
--- fix seed
-opt.manualSeed = 1
+opt.manualSeed = torch.random(1,10000) -- fix seed
+print("Seed: " .. opt.manualSeed)
 torch.manualSeed(opt.manualSeed)
 torch.setnumthreads(1)
-cutorch.setDevice(opt.gpu)
 torch.setdefaulttensortype('torch.FloatTensor')
-opt.coarseSize = 16
-opt.fineSize = 32
-opt.loadSize = 48
+
+opt.fineSize = opt.coarseSize * 2
+opt.loadSize = opt.coarseSize * 3
 opt.noiseDim = {1, opt.fineSize, opt.fineSize}
 classes = {'0','1'}
 opt.geometry = {3, opt.fineSize, opt.fineSize}
@@ -53,12 +53,12 @@ confusion = optim.ConfusionMatrix(classes)
 
 -- Training parameters
 sgdState_D = {
-  learningRate = opt.learningRate,
+  learningRate = opt.learningRateD,
   momentum = opt.momentum
 }
 
 sgdState_G = {
-  learningRate = opt.learningRate,
+  learningRate = opt.learningRateG,
   momentum = opt.momentum
 }
 
@@ -71,13 +71,18 @@ local function train()
    for i=1,opt.epochSize do
       donkeys:addjob(
          function()
-            return makeData(trainLoader:sample(opt.batchSize))
+            return makeData(trainLoader:sample(opt.batchSize)),
+                   makeData(trainLoader:sample(opt.batchSize))
          end,
          adversarial.train)
    end
    donkeys:synchronize()
    cutorch.synchronize()
    print(confusion)
+   tr_acc0 = confusion.valids[1] * 100
+   tr_acc1 = confusion.valids[2] * 100
+   if tr_acc0 ~= tr_acc0 then tr_acc0 = 0 end
+   if tr_acc1 ~= tr_acc1 then tr_acc1 = 0 end
 end
 
 local function test()
@@ -85,8 +90,9 @@ local function test()
    confusion:zero()
    model_D:evaluate()
    model_G:evaluate()
+   nTest=512
    for i=1,nTest/opt.batchSize do -- nTest is set in data.lua
-      xlua.progress(i, math.floor(nTest/opt.batchSize))
+      -- xlua.progress(i, math.floor(nTest/opt.batchSize))
       local indexStart = (i-1) * opt.batchSize + 1
       local indexEnd = (indexStart + opt.batchSize - 1)
       donkeys:addjob(function() return makeData(testLoader:get(indexStart, indexEnd)) end,
@@ -95,6 +101,10 @@ local function test()
    donkeys:synchronize()
    cutorch.synchronize()
    print(confusion)
+   ts_acc0 = confusion.valids[1] * 100
+   ts_acc1 = confusion.valids[2] * 100
+   if ts_acc0 ~= ts_acc0 then ts_acc0 = 0 end
+   if ts_acc1 ~= ts_acc1 then ts_acc1 = 0 end
 end
 
 local function plot(N)
@@ -123,7 +133,7 @@ local function plot(N)
       to_plot[#to_plot+1] = samples[i]:float()
    end
    to_plot = image.toDisplayTensor{input=to_plot, scaleeach=true, nrow=8}
-   image.save(opt.save .. '/' .. 'gen_' .. opt.run_id .. '_' .. epoch .. '.png', to_plot)
+   image.save(opt.save .. '/' .. 'gen_' .. epoch .. '.png', to_plot)
    if opt.plot then
       local disp = require 'display'
       disp.image(to_plot, {win=opt.window, width=600})
@@ -135,6 +145,13 @@ epoch = 1
 while true do
    train()
    test()
+   torch.save(opt.save .. '/' .. 'model_' .. epoch .. '.t7', {D = sanitize(model_D), G = sanitize(model_G)})
+   bistro.log(merge_table({epoch = opt.epoch,
+                           tr_acc0 = tr_acc0,
+                           tr_acc1 = tr_acc1,
+                           ts_acc0 = ts_acc0,
+                           ts_acc1 = ts_acc1,
+                          }, opt))
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
    sgdState_G.momentum = math.min(sgdState_G.momentum + 0.0008, 0.7)

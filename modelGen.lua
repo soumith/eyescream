@@ -93,8 +93,8 @@ function generateModelG(minLayers, maxLayers, minPlanes, maxPlanes, minKH, maxKH
    model:add(cudnn.ReLU(true))
 
    model=model:cuda()
-   local input1 = torch.zeros(10,3,32,32):cuda()
-   local input2 = torch.zeros(10,1,32,32):cuda()
+   local input1 = torch.zeros(10,3,opt.geometry[2],opt.geometry[2]):cuda()
+   local input2 = torch.zeros(10,1,opt.geometry[2],opt.geometry[2]):cuda()
    model:forward({input1, input2})
    return model, desc
 end
@@ -177,8 +177,8 @@ function generateModelD(minLayers, maxLayers, minPlanes, maxPlanes, minKH, maxKH
 
    -- print(model)
    model=model:cuda()
-   local input1 = torch.zeros(10,3,32,32):cuda()
-   local input2 = torch.zeros(10,3,32,32):cuda()
+   local input1 = torch.zeros(13,3,opt.geometry[2],opt.geometry[2]):cuda()
+   local input2 = torch.zeros(13,3,opt.geometry[2],opt.geometry[2]):cuda()
    model:forward({input1, input2})
    return model, desc
 end
