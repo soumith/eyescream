@@ -1,41 +1,22 @@
-paths.dofile('layers/SpatialConvolutionUpsample.lua')
-paths.dofile('layers/cudnnSpatialConvolutionUpsample.lua')
+paths.dofile('modelGen.lua')
 ----------------------------------------------------------------------
--- define D network to train
-local nplanes = 128
-model_D = nn.Sequential()
-model_D:add(nn.CAddTable())
-model_D:add(nn.SpatialBatchNormalization(0))
-model_D:add(cudnn.SpatialConvolution(3, nplanes, 5, 5)) --28 x 28
-model_D:add(nn.ReLU())
-model_D:add(nn.SpatialBatchNormalization(0))
-model_D:add(cudnn.SpatialConvolution(nplanes, nplanes, 5, 5, 2, 2))
-model_D:add(nn.View(nplanes*12*12):setNumInputDims(3))
-model_D:add(nn.ReLU())
-model_D:add(nn.BatchNormalization(0))
-model_D:add(nn.Linear(nplanes*12*12, 1))
-model_D:add(nn.Sigmoid())
-----------------------------------------------------------------------
--- define G network to train
-local nplanes = 128
-model_G = nn.Sequential()
-model_G:add(nn.JoinTable(2, 2))
-model_G:add(nn.SpatialBatchNormalization(0))
-model_G:add(cudnn.SpatialConvolutionUpsample(3+1, nplanes, 7, 7, 1)) -- 3 color channels + conditional
-model_G:add(nn.ReLU())
-model_G:add(nn.SpatialBatchNormalization(0))
-model_G:add(cudnn.SpatialConvolutionUpsample(nplanes, nplanes, 7, 7, 1)) -- 3 color channels + conditional
-model_G:add(nn.ReLU())
-model_G:add(nn.SpatialBatchNormalization(0))
-model_G:add(cudnn.SpatialConvolutionUpsample(nplanes, 3, 5, 5, 1)) -- 3 color channels + conditional
-model_G:add(nn.SpatialBatchNormalization(0))
-model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
-
 if opt.network ~= '' then
   print('<trainer> reloading previously trained network: ' .. opt.network)
   local tmp = torch.load(opt.network)
   model_D = tmp.D
   model_G = tmp.G
+  print('Discriminator network:')
+  print(model_D)
+  print('Generator network:')
+  print(model_G)
+else
+   -- define D network to train
+   model_D = generateModelD(2,6,1,64,3,11, 'mixed', 0, 4, 2)
+   -- define G network to train
+   print('Generator network:')
+   model_G = generateModelG(2,5,1,64,3,11, 'mixed', 0, 4, 2)
+   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
+   print(model_G)
 end
 
 -- loss function: negative log-likelihood
@@ -49,12 +30,6 @@ criterion:cuda()
 -- retrieve parameters and gradients
 parameters_D,gradParameters_D = model_D:getParameters()
 parameters_G,gradParameters_G = model_G:getParameters()
-
--- print networks
-print('Discriminator network:')
-print(model_D)
-print('Generator network:')
-print(model_G)
 
 local freeParams = function(m)
    local list = m:listModules()
