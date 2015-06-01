@@ -1,5 +1,16 @@
 local Threads = require 'threads'
 
+local donkey_file
+if opt.dataset == 'imagenet' then
+   donkey_file = 'donkey_imagenet.lua'
+elseif opt.dataset == 'lsun' then
+   donkey_file = 'donkey_lsun.lua'
+   -- lmdb complains beyond 6 donkeys. wtf.
+   if opt.nDonkeys > 6 then opt.nDonkeys = 6 end
+else
+   error('Unknown dataset: ', opt.dataset)
+end
+
 do -- start K datathreads (donkeys)
    if opt.nDonkeys > 0 then
       local options = opt -- make an upvalue to serialize over to donkey threads
@@ -14,11 +25,11 @@ do -- start K datathreads (donkeys)
             local seed = opt.manualSeed + idx
             torch.manualSeed(seed)
             print(string.format('Starting donkey with id: %d seed: %d', tid, seed))
-            paths.dofile('donkey.lua')
+            paths.dofile(donkey_file)
          end
       );
    else -- single threaded data loading. useful for debugging
-      paths.dofile('donkey.lua')
+      paths.dofile(donkey_file)
       donkeys = {}
       function donkeys:addjob(f1, f2) f2(f1()) end
       function donkeys:synchronize() end
@@ -26,14 +37,6 @@ do -- start K datathreads (donkeys)
 end
 
 os.execute('mkdir -p '.. opt.save)
--- nClasses = nil
--- classes = nil
--- donkeys:addjob(function() return trainLoader.classes end, function(c) classes = c end)
--- donkeys:synchronize()
--- nClasses = #classes
--- assert(nClasses, "Failed to get nClasses")
--- print('nClasses: ', nClasses)
--- torch.save(paths.concat(opt.save, 'classes.t7'), classes)
 
 nTest = 0
 donkeys:addjob(function() return testLoader:size() end, function(c) nTest = c end)

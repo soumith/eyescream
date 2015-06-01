@@ -24,7 +24,6 @@ function adversarial.train(inputs_all, inputs_all2)
    -- create closure to evaluate f(X) and df/dX of discriminator
    local fevalD = function(x)
       collectgarbage()
-      cond_inputs:copy(inputs_all2[3])
       gradParameters_D:zero() -- reset gradients
 
       --  forward pass
@@ -38,7 +37,7 @@ function adversarial.train(inputs_all, inputs_all2)
       -- update confusion (add 1 since classes are binary)
       outputs[outputs:gt(0.5)] = 2
       outputs[outputs:le(0.5)] = 1
-      confusion:batchAdd(outputs, targets + 1)
+      confusion:batchAdd(outputs, targets:clone():add(1))
 
       return err_D,gradParameters_D
    end
@@ -84,6 +83,7 @@ function adversarial.train(inputs_all, inputs_all2)
    -- (2) Update G network: maximize log(D(G(z)))
    noise_inputs:uniform(-1, 1)
    targets:fill(1)
+   cond_inputs:copy(inputs_all2[3])
    optim.sgd(fevalG, parameters_G, sgdState_G)
    batchNumber = batchNumber + 1
    cutorch.synchronize(); collectgarbage();
@@ -104,7 +104,7 @@ function adversarial.test(inputs_all)
    -- add to confusion matrix
    outputs[outputs:gt(0.5)] = 2
    outputs[outputs:le(0.5)] = 1
-   confusion:batchAdd(outputs, targets + 1)
+   confusion:batchAdd(outputs, targets:clone():add(1))
    ----------------------------------------------------------------------
    -- (2) Generated data
    noise_inputs:uniform(-1, 1)

@@ -9,7 +9,9 @@ bistro = require 'bistro'
 ----------------------------------------------------------------------
 -- parse command-line options
 opt = lapp[[
-  -s,--save          (default "logs")      subdirectory to save logs
+  --dataset          (default "imagenet")      imagenet | lsun
+  --model            (default "large")      large | emily | autogen
+  -s,--save          (default "imgslogs")      subdirectory to save logs
   --saveFreq         (default 10)          save every saveFreq epochs
   -n,--network       (default "")          reload pretrained network
   -p,--plot                                plot while training
@@ -23,9 +25,10 @@ opt = lapp[[
   -w, --window       (default 3)           windsow id of sample image
   --nDonkeys         (default 2)           number of data loading threads
   --cache            (default "cache")     folder to cache metadata
-  --epochSize        (default 1000)        number of samples per epoch
+  --epochSize        (default 5000)        number of samples per epoch
+  --nEpochs          (default 25)
   --coarseSize       (default 16)
-  --archgen          (default 16)
+  --archgen          (default 1)
 ]]
 
 print(opt)
@@ -90,7 +93,6 @@ local function test()
    confusion:zero()
    model_D:evaluate()
    model_G:evaluate()
-   nTest=512
    for i=1,nTest/opt.batchSize do -- nTest is set in data.lua
       -- xlua.progress(i, math.floor(nTest/opt.batchSize))
       local indexStart = (i-1) * opt.batchSize + 1
@@ -108,20 +110,28 @@ local function test()
 end
 
 local function plot(N)
-   local N = N or 8
+   local N = N or 16
+   N = math.min(N, opt.batchSize)
+   local offset = 1000
+   if opt.dataset == 'lsun' then
+      offset = 50
+   end
+   assert((N * offset) < (nTest - opt.batchSize - 1))
    local noise_inputs = torch.CudaTensor(N, opt.noiseDim[1], opt.noiseDim[2], opt.noiseDim[3])
    local cond_inputs = torch.CudaTensor(N, opt.condDim[1], opt.condDim[2], opt.condDim[3])
    local gt = torch.CudaTensor(N, 3, opt.condDim[2], opt.condDim[3])
 
    -- Generate samples
    noise_inputs:uniform(-1, 1)
-   local indexStart = torch.random(nTest-N-N)
-   local indexEnd = (indexStart + opt.batchSize - 1)
-   donkeys:addjob(
-      function() return makeData(testLoader:get(indexStart, indexEnd)) end,
-      function(d) cond_inputs:copy(d[3][{{1,N},{},{},{}}]); gt:copy(d[4][{{1,N},{},{},{}}]); end
-   )
-   donkeys:synchronize()
+   for i=0,N-1 do
+      local indexStart = i * offset + 1
+      local indexEnd = (indexStart + opt.batchSize - 1)
+      donkeys:addjob(
+         function() return makeData(testLoader:get(indexStart, indexEnd)) end,
+         function(d) cond_inputs[i+1]:copy(d[3][1]); gt[i+1]:copy(d[4][1]); end
+      )
+      donkeys:synchronize()
+   end
    local samples = model_G:forward({noise_inputs, cond_inputs})
 
    local to_plot = {}
@@ -133,6 +143,10 @@ local function plot(N)
       to_plot[#to_plot+1] = samples[i]:float()
    end
    to_plot = image.toDisplayTensor{input=to_plot, scaleeach=true, nrow=8}
+   if opt.coarseSize < 32 then
+      to_plot = image.scale(to_plot, to_plot:size(2) * 32 / opt.coarseSize,
+                            to_plot:size(3) * 32 / opt.coarseSize)
+   end
    image.save(opt.save .. '/' .. 'gen_' .. epoch .. '.png', to_plot)
    if opt.plot then
       local disp = require 'display'
@@ -141,16 +155,21 @@ local function plot(N)
 
 end
 
+os.execute('mkdir -p ' .. opt.save)
+
 epoch = 1
-while true do
+while epoch < opt.nEpochs do
    train()
    test()
-   torch.save(opt.save .. '/' .. 'model_' .. epoch .. '.t7', {D = sanitize(model_D), G = sanitize(model_G)})
+   torch.save(opt.save .. '/' .. 'model_' .. epoch .. '.t7',
+              {D = sanitize(model_D), G = sanitize(model_G)})
    bistro.log(merge_table({epoch = opt.epoch,
                            tr_acc0 = tr_acc0,
                            tr_acc1 = tr_acc1,
                            ts_acc0 = ts_acc0,
                            ts_acc1 = ts_acc1,
+                           desc_D = desc_D,
+                           desc_G = desc_G,
                           }, opt))
    sgdState_D.momentum = math.min(sgdState_D.momentum + 0.0008, 0.7)
    sgdState_D.learningRate = math.max(sgdState_D.learningRate / 1.000004, 0.000001)
