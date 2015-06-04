@@ -15,7 +15,7 @@ for k,v in pairs(classes) do
 end
 
 -- Check for existence of opt.data
-opt.data = '/home/aszlam/local/lsun'
+opt.data = os.getenv('HOME') .. '/local/lsun'
 if not os.execute('cd ' .. opt.data) then
     print('no local data, falling back to gfsai')
     opt.data = '/gfsai/ai-group/datasets/lsun'
@@ -53,9 +53,12 @@ end
 function makeData(fine, label)
    local diff = fine.new():resizeAs(fine)
    local coarse = fine.new():resizeAs(fine)
+   local mode = 'bilinear'
+   -- workaround for bug: https://github.com/torch/image/issues/73
+   if opt.coarseSize == 1 then mode = 'simple' end
    for i=1,opt.batchSize do
       local tmp = image.scale(fine[i], opt.coarseSize, opt.coarseSize)
-      image.scale(coarse[i], tmp)
+      image.scale(coarse[i], tmp, mode)
    end
    torch.add(diff, fine, -1, coarse)
    return {diff, label, coarse, fine}

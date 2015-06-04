@@ -99,6 +99,76 @@ elseif opt.model == 'autogen' then
       print(model_D)
    until (freeParams(model_D) < freeParams(model_G))
       and (freeParams(model_D) > freeParams(model_G) / 10)
+elseif opt.model == 'full' or opt.model == 'fullgen' then
+   local nhid = 1024
+   local nhidlayers = 2
+   local batchnorm = 1 -- disabled
+   if opt.model == 'fullgen' then
+      nhidlayers = torch.random(1,5)
+      nhid = torch.random(8, 128) * 16
+      batchnorm = torch.random(1,2)
+   end
+   desc_G = ''
+   model_G = nn.Sequential()
+   model_G:add(nn.JoinTable(2, 2))
+   desc_G = desc_G .. '___JT22'
+   model_G:add(nn.View(4 * opt.fineSize * opt.fineSize):setNumInputDims(3))
+   desc_G = desc_G .. '___V_' .. 4 * opt.fineSize * opt.fineSize
+   model_G:add(nn.Linear(4 * opt.fineSize * opt.fineSize, nhid)):add(nn.ReLU())
+   desc_G = desc_G .. '___L ' .. 4 * opt.fineSize * opt.fineSize .. '_' .. nhid
+   desc_G = desc_G .. '__R'
+   if batchnorm == 2 then
+      model_G:add(nn.BatchNormalization(nhid), nil, nil, true)
+      desc_G = desc_G .. '__BNA'
+   end
+   model_G:add(nn.Dropout(0.5))
+   desc_G = desc_G .. '__Drop' .. 0.5
+   for i=1,nhidlayers do
+      model_G:add(nn.Linear(nhid, nhid)):add(nn.ReLU())
+      desc_G = desc_G .. '___L ' .. nhid .. '_' .. nhid
+      desc_G = desc_G .. '__R'
+      if batchnorm == 2 then
+         model_G:add(nn.BatchNormalization(nhid), nil, nil, true)
+         desc_G = desc_G .. '__BNA'
+      end
+      model_G:add(nn.Dropout(0.5))
+      desc_G = desc_G .. '__Drop' .. 0.5
+   end
+   model_G:add(nn.Linear(nhid, opt.geometry[1]*opt.geometry[2]*opt.geometry[3]))
+   desc_G = desc_G .. '___L ' .. nhid .. '_' .. opt.geometry[1]*opt.geometry[2]*opt.geometry[3]
+   if batchnorm == 2 then
+      model_G:add(nn.BatchNormalization(opt.geometry[1]*opt.geometry[2]*opt.geometry[3]))
+      desc_G = desc_G .. '__BNA'
+   end
+   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
+   desc_G = desc_G .. '___V_' .. opt.geometry[1] .. '_' ..  opt.geometry[2] .. '_' ..  opt.geometry[3]
+   print(desc_G)
+   print(model_G)
+
+   nhid = nhid / 2
+   desc_D = ''
+   model_D = nn.Sequential()
+   model_D:add(nn.CAddTable())
+   desc_D = desc_D .. '___CAdd'
+   model_D:add(nn.View(opt.geometry[1]* opt.geometry[2]* opt.geometry[3]))
+   desc_D = desc_D .. '___V_' .. opt.geometry[1]* opt.geometry[2]* opt.geometry[3]
+   model_D:add(nn.Linear(opt.geometry[1]* opt.geometry[2]* opt.geometry[3], nhid)):add(nn.ReLU())
+   desc_D = desc_D .. '___L ' .. opt.geometry[1]* opt.geometry[2]* opt.geometry[3] .. '_' .. nhid
+   desc_D = desc_D .. '__R'
+   for i=1,nhidlayers do
+      model_D:add(nn.Linear(nhid, nhid)):add(nn.ReLU())
+      desc_D = desc_D .. '___L ' .. nhid .. '_' .. nhid
+      desc_D = desc_D .. '__R'
+      model_D:add(nn.Dropout(0.5))
+      desc_D = desc_D .. '__Drop' .. 0.5
+   end
+   model_D:add(nn.Linear(nhid, 1))
+   desc_D = desc_D .. '___L ' .. nhid .. '_' .. 1
+   model_D:add(nn.Sigmoid())
+   desc_D = desc_D .. '__Sig'
+   model_D:cuda()
+   print(desc_D)
+   print(model_D)
 end
 
 -- loss function: negative log-likelihood

@@ -37,9 +37,12 @@ end
 function makeData(fine, label)
    local diff = fine.new():resizeAs(fine)
    local coarse = fine.new():resizeAs(fine)
+   local mode = 'bilinear'
+   -- workaround for bug: https://github.com/torch/image/issues/73
+   if opt.coarseSize == 1 then mode = 'simple' end
    for i=1,opt.batchSize do
       local tmp = image.scale(fine[i], opt.coarseSize, opt.coarseSize)
-      image.scale(coarse[i], tmp)
+      image.scale(coarse[i], tmp, mode)
    end
    torch.add(diff, fine, -1, coarse)
    return {diff, label, coarse, fine}

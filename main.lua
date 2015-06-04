@@ -23,11 +23,12 @@ opt = lapp[[
   -d,--noiseDim      (default 100)         dimensionality of noise vector
   --K                (default 1)           number of iterations to optimize D for
   -w, --window       (default 3)           windsow id of sample image
-  --nDonkeys         (default 2)           number of data loading threads
+  --nDonkeys         (default 10)           number of data loading threads
   --cache            (default "cache")     folder to cache metadata
   --epochSize        (default 5000)        number of samples per epoch
   --nEpochs          (default 25)
   --coarseSize       (default 16)
+  --scaleUp          (default 2)          How much to upscale coarseSize
   --archgen          (default 1)
 ]]
 
@@ -39,8 +40,8 @@ torch.manualSeed(opt.manualSeed)
 torch.setnumthreads(1)
 torch.setdefaulttensortype('torch.FloatTensor')
 
-opt.fineSize = opt.coarseSize * 2
-opt.loadSize = opt.coarseSize * 3
+opt.fineSize = opt.coarseSize * opt.scaleUp
+opt.loadSize = math.ceil(opt.coarseSize * (3 * opt.scaleUp / 2))
 opt.noiseDim = {1, opt.fineSize, opt.fineSize}
 classes = {'0','1'}
 opt.geometry = {3, opt.fineSize, opt.fineSize}
