@@ -11,7 +11,8 @@ print(m[2])
 print(m[3])
 
 one_hot = torch.zeros(10) -- one-hot coding for class-conditional
-one_hot[1] = 1
+classes = {'airplane', 'automobile', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck'}
+one_hot[1] = 1 -- change this index to whichever class you want. For example horse = 8
 
 set = {}
 for i=1,128 do
