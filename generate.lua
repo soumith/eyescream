@@ -9,7 +9,7 @@ m[2] = torch.load('8x14.t7')
 m[3] = torch.load('14x28.t7')
 
 one_hot = torch.zeros(10) -- one-hot coding for class-conditional
-classes = {'airplane', 'automobile', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck'}
+classes = {'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'}
 one_hot[1] = 1 -- change this index to whichever class you want. For example horse = 8
 
 set = {}
