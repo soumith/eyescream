@@ -6,13 +6,10 @@ m[1] = torch.load('8x8.t7')
 m[2] = torch.load('8x14.t7')
 m[3] = torch.load('14x28.t7')
 
-print(m[1])
-print(m[2])
-print(m[3])
-
 one_hot = torch.zeros(10) -- one-hot coding for class-conditional
 classes = {'airplane', 'automobile', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck'}
 one_hot[1] = 1 -- change this index to whichever class you want. For example horse = 8
+one_hot[8] = 1
 
 set = {}
 for i=1,128 do
@@ -35,4 +32,4 @@ for i=1,128 do
 end
 
 -- print(set)
-image.display(image.toDisplayTensor{input=set, scaleeach=true, nrow=8})
+image.display({image=image.toDisplayTensor{input=set, scaleeach=true, nrow=8}, zoom=2})
