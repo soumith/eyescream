@@ -7,7 +7,6 @@ mo = torch.load('14x28_mods_clean.t7')
 
 mp = nn.ParallelTable()
 mp:add(nn.Identity())
-mp:add(nn.Identity())
 
 mm = nn.Sequential()
 
@@ -20,6 +19,7 @@ l1.gradBias = nil
 mm:add(l1):add(nn.ReLU()):add(nn.View(1, 28, 28):setNumInputDims(3))
 
 mp:add(mm)
+mp:add(nn.Identity())
 
 m = nn.Sequential()
 m:add(mp):add(nn.JoinTable(2,2))
