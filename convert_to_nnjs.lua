@@ -25,6 +25,8 @@ function convertToNNJS(mod)
       out.type = 'Linear'
       out.weight = mod.weight:storage():totable()
       out.bias = mod.bias:storage():totable()
+      out.outSize = mod.weight:size(1)
+      out.inSize = mod.weight:size(2)
    elseif torch.type(mod) == 'nn.ReLU' then
       out.type = 'ReLU'
    elseif torch.type(mod) == 'nn.View' then
@@ -42,6 +44,11 @@ function convertToNNJS(mod)
       out.type = 'SpatialConvolution'
       out.weight = mod.weight:transpose(2,4):transpose(2,3):contiguous():storage():totable()
       out.bias =  mod.bias:storage():totable()
+      out.nOutputPlane = mod.nOutputPlane
+      out.nInputPlane = mod.nInputPlane
+      out.kH = mod.kH
+      out.kW = mod.kW
+      assert(mod.dH == 1 and mod.dW == 1, 'only stride-1 convolutions supported')
       out.padH = mod.padH and mod.padH or mod.padding
       out.padW = mod.padW and mod.padW or mod.padding
    else
