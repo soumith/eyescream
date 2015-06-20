@@ -31,7 +31,7 @@ function convertToNNJS(mod)
       out.type = 'View'
       out.dims = m[1].modules[7].size:totable()
    elseif torch.type(mod) == 'nn.ParallelTable' then
-      out.type = 'Parallel'
+      out.type = 'ParallelTable'
       out.modules = {}
       for i=1,#mod.modules do
 	 out.modules[i] = convertToNNJS(mod.modules[i])
