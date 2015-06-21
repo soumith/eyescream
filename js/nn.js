@@ -150,8 +150,7 @@ SpatialConvolution.prototype.forward = function(input) {
 	    for(var yy = 0; yy < oH; yy++) {
 		var oHPtr = oChan + yy * oW;
 		for(var xx = 0; xx < oW; xx++) {
-		    /* Dot product in two dimensions... 
-		       (between input image and the mask) */
+		    /* Dot product in two dimensions...(between input image and the mask) */
 		    var oPtr = oHPtr + xx;
 		    var sum = output.data[oPtr]
 		    for(var ky = 0; ky < kH; ky++) {

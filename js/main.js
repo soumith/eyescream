@@ -14,7 +14,6 @@ screamer.height = screamer.C.height;
 screamer.width = screamer.C.width;
 screamer.nH = screamer.height / 64;
 screamer.nW = screamer.width / 64;
-console.log(screamer.nH, screamer.nW);
 
 screamer.startH = function(grididh) {
     return grididh * 64;
@@ -52,10 +51,30 @@ for (i=0; i < 10000; i++) {
     screamer.random();
 }
 
-/* load network */
+/* load network from server */
+var network = [];
 
+function loadNet(url, idx) {
+    var sock = new XMLHttpRequest();
+    sock.open("GET", url, true);
+    sock.responseType = "arraybuffer";
+    sock.onload = function (oEvent) {
+	var arrayBuffer = sock.response;
+	if (arrayBuffer) {
+	    var byteArray = new Uint8Array(arrayBuffer);
+	    network[idx] = nn.loadFromMsgPack(byteArray);
+	    console.log('succesfully loaded : ', url, idx)
+	}
+    };
+    sock.send(null);
+}
 
+loadNet('models/8x8.mpac', 0);
+loadNet('models/8x14.mpac', 1);
+loadNet('models/14x28.mpac', 2);
 
 screamer.hallucinate = function() {
-    
+    /* while we are waiting for the networks to download, show pregenerated images */
+    if (network.length < 3) {
+    }
 }
