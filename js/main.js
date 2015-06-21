@@ -4,6 +4,12 @@ function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function print() {
+    if (console && console.log) {
+	console.log.apply(console, arguments)
+    }
+}
+
 screamer = {};
 
 screamer.C = document.getElementById("screamer");
@@ -34,6 +40,12 @@ screamer.random = function () {
     ctx.putImageData(screamer.B, w, h);
 }
 
+screamer.draw = function (i, j) {
+    var h = screamer.startH(i)
+    var w = screamer.startW(j)
+    ctx.putImageData(screamer.B, w, h);
+}
+
 screamer.fake = function() {
     var r = getRandom(0, 255);
     var g = getRandom(0, 255);
@@ -46,9 +58,11 @@ screamer.fake = function() {
     }
 }
 
-for (i=0; i < 10000; i++) {
-    screamer.fake();
-    screamer.random();
+for (i=0; i < screamer.nH; i++) {
+    for (j=0; j < screamer.nW; j++) {
+	screamer.fake();
+	screamer.draw(i, j);
+    }
 }
 
 /* load network from server */
@@ -63,7 +77,7 @@ function loadNet(url, idx) {
 	if (arrayBuffer) {
 	    var byteArray = new Uint8Array(arrayBuffer);
 	    network[idx] = nn.loadFromMsgPack(byteArray);
-	    console.log('succesfully loaded : ', url, idx)
+	    print('succesfully loaded : ', url, idx)
 	}
     };
     sock.send(null);
@@ -76,5 +90,8 @@ loadNet('models/14x28.mpac', 2);
 screamer.hallucinate = function() {
     /* while we are waiting for the networks to download, show pregenerated images */
     if (network.length < 3) {
+	
+    } else { /* all models loaded, do live-gen */
+	
     }
 }
