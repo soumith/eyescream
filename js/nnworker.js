@@ -15,8 +15,6 @@ function print() {
     }
 }
 
-
-
 /* load network from server */
 var network = [];
 

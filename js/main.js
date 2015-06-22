@@ -1,8 +1,16 @@
 var nn = require('nn');
 var ndarray = require('ndarray');
 
+debugprints = false;
+
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function print() {
+    if (console && console.log && debugprints) {
+	console.log.apply(console, arguments)
+    }
 }
 
 screamer = {};
@@ -86,7 +94,7 @@ var showPreGen = function() {
 	ctx.drawImage(img, w, h, screamer.sz, screamer.sz);
     }
     img.src = "pregen/" + getRandom(1,6000) + ".png";
-    console.log('missed worker, showing pregen');
+    print('missed worker, showing pregen');
 }
 
 var workerDraw = function(e) {
