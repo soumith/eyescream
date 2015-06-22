@@ -18,6 +18,8 @@ function print() {
 /* load network from server */
 var network = [];
 
+var countloaded = 0;
+
 function loadNet(url, idx) {
     var sock = new XMLHttpRequest();
     sock.open("GET", url, true);
@@ -28,6 +30,7 @@ function loadNet(url, idx) {
 	    var byteArray = new Uint8Array(arrayBuffer);
 	    network[idx] = nn.loadFromMsgPack(byteArray);
 	    print('succesfully loaded : ', url, idx)
+	    countloaded = countloaded + 1;
 	}
     };
     sock.send(null);
@@ -39,7 +42,7 @@ loadNet('../models/14x28.mpac', 2);
 
 
 onmessage = function(e) {
-    if (network.length < 3) {
+    if (countloaded < 3) {
 	postMessage([]);
 	return
     }
