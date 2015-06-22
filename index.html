@@ -207,6 +207,25 @@
 	  <p> Both the experiments comfortably concluded that our networks are generating images that are not
 	    just trivial manipulations of copied training images.
 	  </p>
+	  <h4> Resampling starting from the same initial image </h4>
+	  <p>
+	    Drawing samples conditioned on the same initial image gives us the ability to see if the variability
+	    in producing the samples is trivial (copying), or non-trivial.
+	    <br/>We did a few experiments on the LSUN database and concluded that our samples are fairly different
+	    for every draw. For example, The network changes the building architectures, places and removes 
+	    windows, adds extra tunnels and hulls (and sometimes extra towers) and creates details that are 
+	    different everytime a sample is drawn.
+	  </p>
+	  <div class="thumbnail with-caption">
+	    <img src="images/gen_church.png"
+		 class="img-responsive">
+	    <img src="images/gen_conferenceroom.png"
+		 class="img-responsive">
+	    <img src="images/gen_diningroom.png"
+		 class="img-responsive">
+	    <p>Drawing multiple samples, conditioned on the same initial image. Churches, conference rooms, dining rooms</p>
+	  </div>
+
 	  <h1> A few last details </h1>
 	  <p>
 	    <ul>
