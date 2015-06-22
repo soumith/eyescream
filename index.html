@@ -106,6 +106,16 @@
 	    <p>Each network Gx generates the difference image, when added to the input image, 
 	      gives a finer-scaled image.</p>
 	  </div>
+	  <div class="thumbnail with-caption">
+	    <img src="images/bedroom1.png"
+		 class="img-responsive">
+	    <p>Who in their right mind works on generating bedrooms?</p>
+	  </div>
+	  <div class="thumbnail with-caption">
+	    <img src="images/predicted16.png"
+		 class="img-responsive">
+	    <p>Skylines and bridges</p>
+	  </div>
 	  <h4> The illusion of objectness </h4>
 	  <p>
 	    The multi-scale generation worked extremely well. It got us to a point where we had samples that looked 
@@ -123,6 +133,22 @@
 	    This wasn't going as well as we'd hoped, we needed another advance to get us 
 	    closer to generating objects that actually were objects.
 	  </p>
+	  
+	  <h4> Some fun! </h4>
+	  <p>
+	    Because our neural networks are convolutional in nature, we can recursively apply a 
+	    particular generator over and over again to get images as large as we want. 
+	    However, image statics vary quite a bit at each scale, especially in the lower octaves. 
+	    You can also chain different generators trained on different datasets together. For example,
+	    you can train a generator on a cats dataset, and chain it in the next scale with a generator
+	    trained on horses. It would be fun to try that.
+	    
+	  <div class="thumbnail with-caption">
+	    <img src="images/recursive.png"
+		 class="img-responsive">
+	    <p>256x256 images generated recursively. The network has never learnt to generate beyond 
+	      32x32 pixels, so you see some watercolor effects :)</p>
+	  </div>
 
 	  <h3> Finally: Class-conditional, multi-scale generators </h3>
 	</div>
