@@ -1,5 +1,7 @@
 importScripts('nn.js');
 
+debugprints = false;
+
 var ndarray = require('ndarray');
 var nn = require('nn');
 
@@ -8,7 +10,7 @@ function getRandom(min, max) {
 }
 
 function print() {
-    if (console && console.log) {
+    if (console && console.log && debugprints) {
 	console.log.apply(console, arguments)
     }
 }
