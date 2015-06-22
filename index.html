@@ -142,7 +142,7 @@
 	    You can also chain different generators trained on different datasets together. For example,
 	    you can train a generator on a cats dataset, and chain it in the next scale with a generator
 	    trained on horses. It would be fun to try that.
-	    
+	  </p>
 	  <div class="thumbnail with-caption">
 	    <img src="images/recursive.png"
 		 class="img-responsive">
@@ -155,30 +155,31 @@
 	    Our last idea, which was a fairly natural extension for us to enforce explicit objectness, 
 	    was to pass to the G networks not only an input random noise, but also a one-hot coding of the
 	    class label we want to generate. 
+	  </p>
 	    <div class="thumbnail with-caption">
 	      <img src="images/ccgan.png"
 		   class="img-responsive">
 	      <p>Class-conditional generative adversarial network</p>
 	    </div>
+	    <p>
 	    This idea finally nailed it home in terms of objectness of our generated output.
 	    We trained in on the CIFAR-10 database to produce cool looking horses, cars, airplanes etc.
-
-	    <div class="thumbnail with-caption">
-	      <img src="images/cifar_samples_classcond_28x28.png"
-		   class="img-responsive">
-	      <p>Class-conditional CIFAR-10 28x28 generations</p>
-	    </div>
-
+	    </p>
+	  <div class="thumbnail with-caption">
+	    <img src="images/cifar_samples_classcond_28x28.png"
+		 class="img-responsive">
+	    <p>Class-conditional CIFAR-10 28x28 generations</p>
+	  </div>
+	  <p>
 	    Another simplification that we did for training the LSUN database (because it is large enough, 
 	    and because we were running against a conference deadline)  is that we trained a separate network 
 	    for each class. That also produced nice towers, bedrooms, churches and conference rooms.
-
-	    <div class="thumbnail with-caption">
-	      <img src="images/church_outdoor.png"
-		   class="img-responsive">
-	      <p>Generated Church Outdoors of 64x64 pixels in size</p>
-	    </div>
 	  </p>
+	  <div class="thumbnail with-caption">
+	    <img src="images/church_outdoor.png"
+		 class="img-responsive">
+	    <p>Generated Church Outdoors of 64x64 pixels in size</p>
+	  </div>
 
 	  <h1> Checking network cheating </h1>
 	  <p> One of the easiest thing a generative network can do to generate realistic samples is to
