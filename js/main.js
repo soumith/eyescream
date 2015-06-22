@@ -24,6 +24,11 @@ screamer.height = screamer.C.height;
 screamer.width = screamer.C.width;
 screamer.nH = screamer.height / screamer.sz;
 screamer.nW = screamer.width / screamer.sz;
+if (screamer.nH > 8) {
+    screamer.nH = 8;
+    screamer.C.height = 8 * screamer.sz;
+    screamer.height = screamer.C.height;
+}
 
 screamer.startH = function(grididh) {
     return grididh * screamer.sz;
