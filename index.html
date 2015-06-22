@@ -57,7 +57,7 @@
       <!-- Example row of columns -->
       <div class="row">
 	<div class="col-md-8">
-	  <p> * Approximately half of the images above are being generated live in the browser, 
+	  <p> * Some of the images above are being generated live in the browser, 
 	    and are unique to you and only you </p>
 	  <blockquote><p>Making a machine generate (dream, hallucinate, ...) natural images 
 	    is a lot of fun, and quite complicated. </p></blockquote>
@@ -151,6 +151,77 @@
 	  </div>
 
 	  <h3> Finally: Class-conditional, multi-scale generators </h3>
+	  <p>
+	    Our last idea, which was a fairly natural extension for us to enforce explicit objectness, 
+	    was to pass to the G networks not only an input random noise, but also a one-hot coding of the
+	    class label we want to generate. 
+	    <div class="thumbnail with-caption">
+	      <img src="images/ccgan.png"
+		   class="img-responsive">
+	      <p>Class-conditional generative adversarial network</p>
+	    </div>
+	    This idea finally nailed it home in terms of objectness of our generated output.
+	    We trained in on the CIFAR-10 database to produce cool looking horses, cars, airplanes etc.
+
+	    <div class="thumbnail with-caption">
+	      <img src="images/cifar_samples_classcond_28x28.png"
+		   class="img-responsive">
+	      <p>Class-conditional CIFAR-10 28x28 generations</p>
+	    </div>
+
+	    Another simplification that we did for training the LSUN database (because it is large enough, 
+	    and because we were running against a conference deadline)  is that we trained a separate network 
+	    for each class. That also produced nice towers, bedrooms, churches and conference rooms.
+
+	    <div class="thumbnail with-caption">
+	      <img src="images/church_outdoor.png"
+		   class="img-responsive">
+	      <p>Generated Church Outdoors of 64x64 pixels in size</p>
+	    </div>
+	  </p>
+
+	  <h1> Checking network cheating </h1>
+	  <p> One of the easiest thing a generative network can do to generate realistic samples is to
+	    simply copy the training images. This is not a true generative model that generalizes to 
+	    all natural images, but one that overfit heavily on the training set.
+
+	    This is thing we meticulously checked while training our networks, i.e. that our network is simply
+	    not copying the training samples.
+
+	    We've done this in a couple of ways.
+	  </p>
+	  <h4> Nearest neighbors using L2 pixel-wise distance </h4>
+	  <p>
+	    For each of our generated sample, we found it's nearest neighbor in the training set using a 
+	    L2 distance in pixel space.
+	  </p>
+	  <h4> Nearest neighbors using L2 feature-space distance </h4>
+	  <p>
+	    For each of our generated sample, we found it's nearest neighbor in the training set using a 
+	    L2 distance in feature-space using 
+	    <a href="https://gist.github.com/mavenlin/e56253735ef32c3c296d">
+	      this well-performing Network-in-Network CIFAR model
+	    </a>.
+	  </p>
+	  <p> Both the experiments comfortably concluded that our networks are generating images that are not
+	    just trivial manipulations of copied training images.
+	  </p>
+	  <h1> Where do we go from here? </h1>
+	  <p> There are so many things to explore, as follow-up work to this paper. A list of simple ideas would be:
+	    <ul>
+	      <li> instead of one-hot coding, give word-embeddings as the conditional vector. 
+		Imagine the awesomeness of going from image captions to images.
+	      </li>
+	      <li>
+		Apply the same exact method to generate audio and video
+	      </li>
+	    </ul>
+	  </p>
+	  <h1> Code etc. </h1>
+	  <p>
+	    We will release the Torch code to train all of our models by the end of the week.
+	    Come back soon to this section and get the code.
+	  </p>
 	</div>
       </div>
       <hr>
