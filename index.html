@@ -40,19 +40,91 @@
       </div>
     </nav>
 
-    <div class="container-fluid">
+    <div class="col-md-12___1" style="width: 100%">
+      <div class="dtitle">
+	<h1 class="mtitle"> The Eyescream Project </h1>
+	<h2 class="mtitle2"><i> NeuralNets dreaming natural images </i></h2>
+	<h2 class="mtitle3"> - <a href="http://soumith.ch">Soumith</a>, 
+	  <a href="http://www.cs.nyu.edu/~denton">Emily</a>, 
+	  <a href="http://www.sci.ccny.cuny.edu/~szlam/">Arthur & 
+	    <a href="https://research.facebook.com/researchers/1522313361316754/rob-fergus/">Rob</a> 
+	</h2>
+      </div>
+      <canvas id="screamer" style="border:1px solid #000000;"></canvas>
+    </div>
+
+    <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-        <div class="col-md-12___1" style="width: 100%">
-	  <div class="dtitle">
-	    <h1 class="mtitle"> The Eyescream Project </h1>
-	    <h2 class="mtitle2"><i> NeuralNets dreaming natural images </i></h2>
-	    <h2 class="mtitle3"> - <a href="http://soumith.ch">Soumith</a>, <a href="http://www.cs.nyu.edu/~denton">Emily</a>, <a href="http://www.sci.ccny.cuny.edu/~szlam/">Arthur & <a href="https://research.facebook.com/researchers/1522313361316754/rob-fergus/">Rob</a> </h2>
+	<div class="col-md-8">
+	  <p> * Approximately half of the images above are being generated live in the browser, 
+	    and are unique to you and only you </p>
+	  <blockquote><p>Making a machine generate (dream, hallucinate, ...) natural images 
+	    is a lot of fun, and quite complicated. </p></blockquote>
+
+	  <h1> The lead up </h1>
+	  <p> 
+	    About two months ago, Emily, Arthur, Rob and I decided to try something that's been 
+	    at the back of our heads since <i> Ian Goodfellow </i> first presented (the awesome) 
+	    Generative Adversarial Networks at NIPS last year. Ian's work came close to generating 
+	    natural-ish images, but still fell short in terms of image quality. 
+	    The paper excited us, and we discussed it to length at the conference and after.
+	  </p>
+	  <br/>
+	  <p class='lead'> Adversarial networks are fun things. </p>
+	  <p>
+	    You pit a generative (G) machine against a discriminative (G) machine and make them fight. 
+	    The G machine attempts to produce fake data that looks so real that the D machine cannot tell it apart. 
+	    The D machine is learning to not get fooled by the G machine. 
+	    As these both play their mini-max game, you hope to get a good quality generator, 
+	    that can generate infinite samples of images that look real.
+	  </p>
+	  <div class="thumbnail with-caption">
+	    <img src="https://upload.wikimedia.org/wikipedia/en/4/46/Street_Fighter_II_%28arcade%29_screenshot.png"
+		 class="img-responsive">
+	    <p>Street Fighter as an analogy for Adversarial Nets. <br/>Two networks fight against each other, 
+	      and slowly get better at the game after playing long enough</p>
 	  </div>
-	  <canvas id="screamer" style="border:1px solid #000000;"></canvas>
-        </div>
-	<div class="container">
 	  
+	  <h1> The research process </h1>
+	  <h3> First steps: making Goodfellow's neural network bigger and deeper </h3>
+	  <p> To keep this section brief, this did not work. It didn't work at all.
+	    The adversarial training was harder to be stable, and when we did get a stable model,
+	    it did not improve image sample quality.
+	  </p>
+
+	  <h3> Next try: multi-scale generators </h3>
+	  <p> The key idea that got us going was to train a laplacian scale of networks, 
+	    each network predicting one scale ahead. 
+
+	    What that means in simpler terms is that, the network at a particular scale gets 
+	    the coarse-scaled version of the image to predict, and generates the finer-scale version of the image.
+	  </p>
+	  <div class="thumbnail with-caption">
+	    <img src="images/LAPGAN.png"
+		 class="img-responsive">
+	    <p>Each network Gx generates the difference image, when added to the input image, 
+	      gives a finer-scaled image.</p>
+	  </div>
+	  <h4> The illusion of objectness </h4>
+	  <p>
+	    The multi-scale generation worked extremely well. It got us to a point where we had samples that looked 
+	    much more real than previous attempts at generating such samples. However, there was one problem.
+	  </p>
+	  <blockquote>
+	  <p>
+	    The images always looked object-like, but had no actual object.
+	  </p>
+	  </blockquote>
+	  <p>
+	    Looking at the image at a glance would totally wow you, but looking closer, 
+	    you'd be scratching your head.
+
+	    This wasn't going as well as we'd hoped, we needed another advance to get us 
+	    closer to generating objects that actually were objects.
+	  </p>
+
+	  <h3> Finally: Class-conditional, multi-scale generators </h3>
 	</div>
       </div>
       <hr>
