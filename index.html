@@ -207,6 +207,24 @@
 	  <p> Both the experiments comfortably concluded that our networks are generating images that are not
 	    just trivial manipulations of copied training images.
 	  </p>
+	  <h1> A few last details </h1>
+	  <p>
+	    <ul>
+	      <li>
+		Adversarial training was hard to get right. 
+		Changing the model a little bit, or changing the learning rates a little bit made 
+		the network not learn anything at all.
+	      </li>
+	      <li>
+		Using batch normalization in the discriminative network makes the whole adversarial training
+		not work.
+	      </li>
+	      <li>
+		We developed a few thumb rules like keeping the total number of parameters in the D network 
+		to be a 0.5 or 0.125 factor of the total number of parameters in the G network.
+	      </li>
+	    </ul>
+	  </p>
 	  <h1> Where do we go from here? </h1>
 	  <p> There are so many things to explore, as follow-up work to this paper. A list of simple ideas would be:
 	    <ul>
@@ -215,6 +233,9 @@
 	      </li>
 	      <li>
 		Apply the same exact method to generate audio and video
+	      </li>
+	      <li>
+		Develop better theory and more stabilized training of adversarial nets.
 	      </li>
 	    </ul>
 	  </p>
