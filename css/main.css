@@ -15,26 +15,26 @@
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
     text-shadow: 2px 2px #888888;
     font-size: 60px;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .mtitle2 {
     color: #FFFFFF;
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .mtitle3 {
     color: #FFFFFF;
     font-family: Georgia, serif;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .mtitle3 >a, .mtitle3 >a:visited, .mtitle3 >a:hover, .mtitle3 >a:active {
     text-decoration: none;
     color: #FFFFFF;
     font-family: Georgia, serif;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
   .thumbnail.with-caption {
