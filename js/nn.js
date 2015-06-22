@@ -289,7 +289,7 @@ env.loadFromMsgPack = loadFromMsgPack
 // env.loadFromGZipMsgPack = loadFromGZipMsgPack
 // env.loadFromGZipJSON = loadFromGZipJSON
 
-},{"./env.js":3,"assert":29,"msgpack-js":8,"ndarray":"ndarray"}],6:[function(require,module,exports){
+},{"./env.js":3,"assert":30,"msgpack-js":9,"ndarray":"ndarray"}],6:[function(require,module,exports){
 var env = require('./env.js')
 var ndarray = require("ndarray")
 
@@ -419,6 +419,95 @@ SpatialMaxPooling.prototype.forward = function(input) {
 env.SpatialMaxPooling = SpatialMaxPooling
 
 },{"./env.js":3,"ndarray":"ndarray","ndarray-fill":"ndarray-fill"}],8:[function(require,module,exports){
+var ndarray = require("ndarray")
+var fill = require("ndarray-fill")
+var env = require("./env")
+
+var noise1d = function(n) {
+    var arr = new ndarray(new Float32Array(n), [n]);
+    fill(arr, function(k) {
+	    return (Math.random() * 2) - 1
+	})
+    return arr;
+}
+
+var noise2d = function(n, m) {
+    var arr = new ndarray(new Float32Array(n*m), [n, m]);
+    fill(arr, function(k,j) {
+	    return (Math.random() * 2) - 1
+	})
+    return arr;
+}
+
+var noise3d = function(n, m, k) {
+    var arr = new ndarray(new Float32Array(n*m*k), [n, m, k]);
+    fill(arr, function(h,i,j) {
+	    return (Math.random() * 2) - 1
+	})
+    return arr;
+}
+
+
+var getPix = function(ip, k, i, j) {
+    if ( i < 0 || i >= ip.shape[1] || j < 0 || j >= ip.shape[2]) {
+	return 0;
+    } else {
+	return ip.get(k, i, j);
+    }
+}
+
+var upscaleBilinear = function(inp, h, w) {
+    var iH = inp.shape[1];
+    var iW = inp.shape[2];
+    var out = new ndarray(new Float32Array(3*h*w), [3, h, w]);
+    for (var k=0; k < 3; k++) {
+	for (var y = 0; y < h; y++) {
+	    for (var x = 0; x < w; x++) {
+		var xx = x * iH / w; /* input width index (float) */
+		var yy = y * iW / h; /* input height index (float) */
+		var fx = xx|0;
+		var fy = yy|0;
+		if (fx === xx && fy === yy) {
+		    out.set(k, y, x, getPix(inp, k, fy, fx))
+		} else {
+		    var scale_xx = xx % 1;
+		    var scale_yy = yy % 1;
+		    var newVal = (1 - scale_yy) * ((1 - scale_xx) * getPix(inp, k, fy, fx) +  scale_xx * getPix(inp, k, fy, fx+1)) + 
+			scale_yy * ((1 - scale_xx) * getPix(inp, k, fy+1, fx) +  scale_xx * getPix(inp, k, fy+1, fx+1));
+		    out.set(k, y, x, newVal);
+		}
+	    }
+	}
+    }
+    return out;
+}
+
+var minmaxnormalize = function(img, factor) {
+    var f = factor || 256;
+    // normalize output
+    var min = 9999;
+    var max = -9999;
+    for (i=0; i < img.data.length; i++) {
+	min = Math.min(min, img.data[i])
+	max = Math.max(max, img.data[i])
+    }
+    max = max - min;
+    for (i=0; i < img.data.length; i++) {
+	img.data[i] += (-1 * min)
+	img.data[i] = f * img.data[i] / max;
+    }
+    return img;
+}
+
+
+env.utils = {}
+env.utils.noise1d = noise1d
+env.utils.noise2d = noise2d
+env.utils.noise3d = noise3d
+env.utils.upscaleBilinear = upscaleBilinear
+env.utils.minMaxNormalize = minmaxnormalize
+
+},{"./env":3,"ndarray":"ndarray","ndarray-fill":"ndarray-fill"}],9:[function(require,module,exports){
 "use strict";
 
 var bops = require('bops');
@@ -924,7 +1013,7 @@ function sizeof(value) {
 
 
 
-},{"bops":9}],9:[function(require,module,exports){
+},{"bops":10}],10:[function(require,module,exports){
 var proto = {}
 module.exports = proto
 
@@ -945,7 +1034,7 @@ function mix(from, into) {
   }
 }
 
-},{"./copy.js":12,"./create.js":13,"./from.js":14,"./is.js":15,"./join.js":16,"./read.js":18,"./subarray.js":19,"./to.js":20,"./write.js":21}],10:[function(require,module,exports){
+},{"./copy.js":13,"./create.js":14,"./from.js":15,"./is.js":16,"./join.js":17,"./read.js":19,"./subarray.js":20,"./to.js":21,"./write.js":22}],11:[function(require,module,exports){
 (function (exports) {
 	'use strict';
 
@@ -1031,7 +1120,7 @@ function mix(from, into) {
 	module.exports.fromByteArray = uint8ToBase64;
 }());
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 module.exports = to_utf8
 
 var out = []
@@ -1106,7 +1195,7 @@ function reduced(list) {
   return out
 }
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 module.exports = copy
 
 var slice = [].slice
@@ -1160,12 +1249,12 @@ function slow_copy(from, to, j, i, jend) {
   }
 }
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 module.exports = function(size) {
   return new Uint8Array(size)
 }
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 module.exports = from
 
 var base64 = require('base64-js')
@@ -1225,13 +1314,13 @@ function from_base64(str) {
   return new Uint8Array(base64.toByteArray(str)) 
 }
 
-},{"base64-js":10}],15:[function(require,module,exports){
+},{"base64-js":11}],16:[function(require,module,exports){
 
 module.exports = function(buffer) {
   return buffer instanceof Uint8Array;
 }
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 module.exports = join
 
 function join(targets, hint) {
@@ -1269,7 +1358,7 @@ function get_length(targets) {
   return size
 }
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var proto
   , map
 
@@ -1291,7 +1380,7 @@ function get(target) {
   return out
 }
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 module.exports = {
     readUInt8:      read_uint8
   , readInt8:       read_int8
@@ -1380,14 +1469,14 @@ function read_double_be(target, at) {
   return dv.getFloat64(at + target.byteOffset, false)
 }
 
-},{"./mapped.js":17}],19:[function(require,module,exports){
+},{"./mapped.js":18}],20:[function(require,module,exports){
 module.exports = subarray
 
 function subarray(buf, from, to) {
   return buf.subarray(from || 0, to || buf.length)
 }
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 module.exports = to
 
 var base64 = require('base64-js')
@@ -1425,7 +1514,7 @@ function to_base64(buf) {
 }
 
 
-},{"base64-js":10,"to-utf8":11}],21:[function(require,module,exports){
+},{"base64-js":11,"to-utf8":12}],22:[function(require,module,exports){
 module.exports = {
     writeUInt8:      write_uint8
   , writeInt8:       write_int8
@@ -1513,9 +1602,9 @@ function write_double_be(target, value, at) {
   return dv.setFloat64(at + target.byteOffset, value, false)
 }
 
-},{"./mapped.js":17}],22:[function(require,module,exports){
+},{"./mapped.js":18}],23:[function(require,module,exports){
 module.exports = require("cwise-compiler")
-},{"cwise-compiler":23}],23:[function(require,module,exports){
+},{"cwise-compiler":24}],24:[function(require,module,exports){
 "use strict"
 
 var createThunk = require("./lib/thunk.js")
@@ -1626,7 +1715,7 @@ function compileCwise(user_args) {
 
 module.exports = compileCwise
 
-},{"./lib/thunk.js":25}],24:[function(require,module,exports){
+},{"./lib/thunk.js":26}],25:[function(require,module,exports){
 "use strict"
 
 var uniq = require("uniq")
@@ -1982,7 +2071,7 @@ function generateCWiseOp(proc, typesig) {
 }
 module.exports = generateCWiseOp
 
-},{"uniq":26}],25:[function(require,module,exports){
+},{"uniq":27}],26:[function(require,module,exports){
 "use strict"
 
 // The function below is called when constructing a cwise function object, and does the following:
@@ -2055,7 +2144,7 @@ function createThunk(proc) {
 
 module.exports = createThunk
 
-},{"./compile.js":24}],26:[function(require,module,exports){
+},{"./compile.js":25}],27:[function(require,module,exports){
 "use strict"
 
 function unique_pred(list, compare) {
@@ -2114,7 +2203,7 @@ function unique(list, compare, sorted) {
 
 module.exports = unique
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict"
 
 function iota(n) {
@@ -2126,7 +2215,7 @@ function iota(n) {
 }
 
 module.exports = iota
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /**
  * Determine if an object is Buffer
  *
@@ -2145,7 +2234,7 @@ module.exports = function (obj) {
   )
 }
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -2506,7 +2595,7 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":33}],30:[function(require,module,exports){
+},{"util/":34}],31:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -2531,7 +2620,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -2623,14 +2712,14 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -3220,7 +3309,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":32,"_process":31,"inherits":30}],"ndarray-fill":[function(require,module,exports){
+},{"./support/isBuffer":33,"_process":32,"inherits":31}],"ndarray-fill":[function(require,module,exports){
 "use strict"
 
 
@@ -3232,7 +3321,7 @@ module.exports = function(array, f) {
   return array
 }
 
-},{"cwise/lib/wrapper":22}],"ndarray":[function(require,module,exports){
+},{"cwise/lib/wrapper":23}],"ndarray":[function(require,module,exports){
 var iota = require("iota-array")
 var isBuffer = require("is-buffer")
 
@@ -3577,7 +3666,7 @@ function wrappedNDArrayCtor(data, shape, stride, offset) {
 
 module.exports = wrappedNDArrayCtor
 
-},{"iota-array":27,"is-buffer":28}],"nn":[function(require,module,exports){
+},{"iota-array":28,"is-buffer":29}],"nn":[function(require,module,exports){
 var env = require('./env.js')
 
 require('./conv.js')
@@ -3586,7 +3675,8 @@ require('./full.js')
 require('./pointwise.js')
 require('./containers.js')
 require('./loaders.js')
+require('./utils.js')
 
 module.exports = env
 
-},{"./containers.js":1,"./conv.js":2,"./env.js":3,"./full.js":4,"./loaders.js":5,"./pointwise.js":6,"./pool.js":7}]},{},[]);
+},{"./containers.js":1,"./conv.js":2,"./env.js":3,"./full.js":4,"./loaders.js":5,"./pointwise.js":6,"./pool.js":7,"./utils.js":8}]},{},[]);
