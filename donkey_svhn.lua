@@ -7,8 +7,7 @@ require 'lmdb'
 ------------------------------------------
 -------- COMMON CACHES and PATHS
 classes = {'bedroom', 'bridge', 'church_outdoor', 'classroom', 'conference_room',
-          'dining_room', 'kitchen', 'living_room', 'restaurant', 'tower'}
--- classes = {'church_outdoor'}
+           'dining_room', 'kitchen', 'living_room', 'restaurant', 'tower'}
 table.sort(classes)
 print('Classes:')
 for k,v in pairs(classes) do

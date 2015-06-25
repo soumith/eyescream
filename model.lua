@@ -169,6 +169,34 @@ elseif opt.model == 'full' or opt.model == 'fullgen' then
    model_D:cuda()
    print(desc_D)
    print(model_D)
+elseif opt.model == 'small_18' then
+   assert(opt.scratch == 1) -- check that this is not conditional on a previous scale
+   ----------------------------------------------------------------------
+   local input_sz = opt.geometry[1] * opt.geometry[2] * opt.geometry[3]
+   -- define D network to train
+   local numhid = 600
+   model_D = nn.Sequential()
+   model_D:add(nn.View(input_sz):setNumInputDims(3))
+   model_D:add(nn.Linear(input_sz, numhid))
+   model_D:add(nn.ReLU())
+   model_D:add(nn.Dropout())
+   model_D:add(nn.Linear(numhid, numhid))
+   model_D:add(nn.ReLU())
+   model_D:add(nn.Dropout())
+   model_D:add(nn.Linear(numhid, 1))
+   model_D:add(nn.Sigmoid())
+   ----------------------------------------------------------------------
+   local noiseDim = opt.noiseDim[1] * opt.noiseDim[2] * opt.noiseDim[3]
+   -- define G network to train
+   local numhid = 600
+   model_G = nn.Sequential()
+   model_G:add(nn.View(noiseDim):setNumInputDims(3))
+   model_G:add(nn.Linear(noiseDim, numhid))
+   model_G:add(nn.ReLU())
+   model_G:add(nn.Linear(numhid, numhid))
+   model_G:add(nn.ReLU())
+   model_G:add(nn.Linear(numhid, input_sz))
+   model_G:add(nn.View(opt.geometry[1], opt.geometry[2], opt.geometry[3]))
 end
 
 -- loss function: negative log-likelihood

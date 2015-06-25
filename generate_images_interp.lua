@@ -19,7 +19,7 @@ m3 = torch.load(model32).G
 m3:evaluate()
 m3.modules[#m3.modules] = nil
 
-n = 256
+n = 32
 
 local rands = {}
 
@@ -111,14 +111,14 @@ s4_i:add(s4)
 s44 = image.toDisplayTensor{input=s4_i, scaleeach=true, nrow=8}
 image.save('/home/soumith/public_html/4.png', s44)
 
-local s5_i = torch.zeros(n, 3, 128, 128)
-for i=1,n do
-   s5_i[i]:copy(image.scale(s4_i[i]:float(), 128, 128))
-end
-s5_i = s5_i:cuda()
-s5 = m3:forward({rands[5]:cuda(), s5_i:view(n,3,128,128)})
+-- local s5_i = torch.zeros(n, 3, 128, 128)
+-- for i=1,n do
+--    s5_i[i]:copy(image.scale(s4_i[i]:float(), 128, 128))
+-- end
+-- s5_i = s5_i:cuda()
+-- s5 = m3:forward({rands[5]:cuda(), s5_i:view(n,3,128,128)})
 
-print(#s5)
-s5_i:add(s5)
-s54 = image.toDisplayTensor{input=s5_i, scaleeach=true, nrow=8}
-image.save('/home/soumith/public_html/5.png', s54)
+-- print(#s5)
+-- s5_i:add(s5)
+-- s54 = image.toDisplayTensor{input=s5_i, scaleeach=true, nrow=8}
+-- image.save('/home/soumith/public_html/5.png', s54)

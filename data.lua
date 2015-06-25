@@ -6,7 +6,7 @@ if opt.dataset == 'imagenet' then
 elseif opt.dataset == 'lsun' then
    donkey_file = 'donkey_lsun.lua'
    -- lmdb complains beyond 6 donkeys. wtf.
-   if opt.nDonkeys > 6 then opt.nDonkeys = 6 end
+   if opt.nDonkeys > 6 and opt.forceDonkeys == 0 then opt.nDonkeys = 6 end
 else
    error('Unknown dataset: ', opt.dataset)
 end

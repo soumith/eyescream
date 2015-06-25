@@ -19,9 +19,6 @@ opt = lapp[[
   --learningRateG    (default 0.01)        learning rate, for SGD only
   -b,--batchSize     (default 128)         batch size
   -m,--momentum      (default 0)           momentum, for SGD only
-  -t,--threads       (default 4)           number of threads
-  -d,--noiseDim      (default 100)         dimensionality of noise vector
-  --K                (default 1)           number of iterations to optimize D for
   -w, --window       (default 3)           windsow id of sample image
   --nDonkeys         (default 10)           number of data loading threads
   --cache            (default "cache")     folder to cache metadata
@@ -30,6 +27,8 @@ opt = lapp[[
   --coarseSize       (default 16)
   --scaleUp          (default 2)          How much to upscale coarseSize
   --archgen          (default 1)
+  --scratch          (default 0)
+  --forceDonkeys     (default 0)
 ]]
 
 print(opt)
@@ -52,8 +51,8 @@ paths.dofile('model.lua')
 paths.dofile('data.lua')
 adversarial = paths.dofile('train.lua')
 
--- this matrix records the current confusion across classes
-confusion = optim.ConfusionMatrix(classes)
+-- this matrix records the current confusion among real/fake classes
+confusion = optim.ConfusionMatrix(2)
 
 -- Training parameters
 sgdState_D = {
@@ -115,7 +114,7 @@ local function plot(N)
    N = math.min(N, opt.batchSize)
    local offset = 1000
    if opt.dataset == 'lsun' then
-      offset = 50
+      offset = math.floor((nTest - opt.batchSize - 1)/16)
    end
    assert((N * offset) < (nTest - opt.batchSize - 1))
    local noise_inputs = torch.CudaTensor(N, opt.noiseDim[1], opt.noiseDim[2], opt.noiseDim[3])
@@ -133,7 +132,11 @@ local function plot(N)
       )
       donkeys:synchronize()
    end
-   local samples = model_G:forward({noise_inputs, cond_inputs})
+   local finputs = {noise_inputs, cond_inputs}
+   if opt.scratch == 1 then
+      finputs = noise_inputs
+   end
+   local samples = model_G:forward(finputs)
 
    local to_plot = {}
    for i=1,N do
