@@ -9,3 +9,4 @@ To generate images, use:
 th generate.lua
 ```
 
+# For training code, go here: https://github.com/facebook/eyescream
